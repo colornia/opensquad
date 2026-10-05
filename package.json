@@ -1,0 +1,33 @@
+{
+  "name": "opensquad",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An open-source Minecraft teammate",
+  "license": "MIT",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "tsx --test test/*.test.ts",
+    "check": "npm run build && npm test",
+    "smoke": "tsx scripts/smoke.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "dotenv": "^17.0.0",
+    "mineflayer": "^4.0.0",
+    "mineflayer-collectblock": "^1.6.0",
+    "mineflayer-pathfinder": "^2.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "flying-squid": "^1.12.0",
+    "prettier": "3.9.9",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
