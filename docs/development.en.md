@@ -40,6 +40,8 @@ Enter these messages in game. Prefix every command or conversation with `!bot`, 
 | ---------------------------------------- | --------------------------------------------------------------- |
 | `!bot follow me`                         | Follow the issuing player at about two blocks distance.         |
 | `!bot stop`                              | Cancel collection/navigation and stop guarding or fighting.     |
+| `!bot status`                            | Show the current task, cleanup, or selected ongoing mode.       |
+| `!bot inventory`                         | Summarize the first eight carried item types and their counts.  |
 | `!bot come here`                         | Walk to the issuing player's current position.                  |
 | `!bot collect oak_log 3`                 | Gather up to three additional items; default quantity is one.   |
 | `!bot give me oak_log 3`                 | Walk to you and toss up to three inventory items for pickup.    |
@@ -57,6 +59,8 @@ Stay within visible, loaded chunks. Give the bot an appropriate pickaxe before r
 Combat is deliberately basic: a fixed hostile allowlist, bounded range, pursuit, and a 650 ms attack interval. It uses the currently held item (or punches), never deliberately targets players or passive animals, and has no advanced shielding, armor management, healing, creeper avoidance, or guaranteed survival. Some conditionally hostile mobs such as spiders are included; neutral endermen and zombified piglins are excluded. The network smoke checks that combat modes start and stop, not combat success against live mobs.
 
 ## Architecture and LLM configuration
+
+Status and inventory queries bypass the action lock, do not call the brain, and do not create memory events. Status describes the current request or selected ongoing mode rather than confirming position or continuous movement. The optional `Skills.inventory()` getter returns aggregated `{ name, count }` entries; adapters without it report that inventory queries are unavailable. Collection with zero new items fails without creating a successful event.
 
 `src/brain` contains the provider-neutral `Brain.reply(context, signal)` interface, deterministic `MockBrain`, and an OpenAI-compatible HTTP implementation. To use another provider, implement the interface and select it in `createBrain`. Set `BRAIN_PROVIDER=openai-compatible`, `LLM_BASE_URL`, `LLM_MODEL`, and `LLM_API_KEY` to enable the bundled HTTP provider. Requests time out after ten seconds and fall back to mock replies on missing keys, transport failures, or invalid responses. A configured external provider receives addressed conversational text, the player name, and that player's saved preferences/events. Deterministic action commands do not call the LLM.
 

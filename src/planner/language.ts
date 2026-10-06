@@ -1,6 +1,20 @@
 export function isChinese(text: string) {
   return /[\u3400-\u9fff]/u.test(text);
 }
+export function chineseItemName(item: string) {
+  const names: Record<string, string> = {
+    oak_log: "橡木原木",
+    birch_log: "白桦木原木",
+    spruce_log: "云杉木原木",
+    dirt: "泥土",
+    sand: "沙子",
+    cobblestone: "圆石",
+    coal: "煤炭",
+    raw_iron: "粗铁",
+    diamond: "钻石",
+  };
+  return Object.hasOwn(names, item) ? names[item] : item;
+}
 
 // Translate deterministic skill results; model-generated conversation keeps its own language.
 export function chineseReply(text: string): string {
@@ -43,17 +57,27 @@ export function chineseReply(text: string): string {
     ],
     [
       /^Collected (\d+) (.+) \(requested (\d+)\)\.$/,
-      (n, item, wanted) => `收集到了 ${n} 个 ${item}，目标是 ${wanted} 个。`,
+      (n, item, wanted) =>
+        `收集到了 ${n} 个 ${chineseItemName(item)}，目标是 ${wanted} 个。`,
     ],
     [
       /^Dropped (\d+) (.+) beside (.+); pick it up\.$/,
-      (n, item, name) => `把 ${n} 个 ${item} 放在 ${name} 身边了，记得捡。`,
+      (n, item, name) =>
+        `把 ${n} 个 ${chineseItemName(item)} 放在 ${name} 身边了，记得捡。`,
     ],
     [
       /^(.+) is not visible\. Move closer\.$/,
       (name) => `还看不到 ${name}，走近一点吧。`,
     ],
-    [/^I have no (.+)\.$/, (item) => `我背包里还没有 ${item}。`],
+    [
+      /^I have no (.+)\.$/,
+      (item) => `我背包里还没有 ${chineseItemName(item)}。`,
+    ],
+    [
+      /^No (.+) collected\. Check nearby sources, tools and inventory space\.$/,
+      (item) =>
+        `这次没有拿到${chineseItemName(item)}。看看附近有没有资源、工具是否合适，背包是否还有空位。`,
+    ],
   ];
   for (const [pattern, format] of patterns) {
     const match = text.match(pattern);

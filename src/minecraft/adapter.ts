@@ -64,6 +64,12 @@ export class MinecraftAdapter implements Skills {
       .match(/.{1,200}/gu) ?? [])
       this.bot.chat(chunk.startsWith("/") ? `[AI] ${chunk}` : chunk);
   }
+  inventory() {
+    const totals = new Map<string, number>();
+    for (const item of this.bot.inventory.items())
+      totals.set(item.name, (totals.get(item.name) ?? 0) + item.count);
+    return [...totals].map(([name, count]) => ({ name, count }));
+  }
   private player(name: string) {
     const entity = this.bot.players[name]?.entity;
     if (!entity) throw new Error(`${name} is not visible. Move closer.`);
@@ -140,7 +146,12 @@ export class MinecraftAdapter implements Skills {
         await this.bot.collectBlock.collect(block);
         signal.throwIfAborted();
       }
-      return `Collected ${Math.max(0, total() - before)} ${item} (requested ${wanted}).`;
+      const collected = Math.max(0, total() - before);
+      if (!collected)
+        throw new Error(
+          `No ${item} collected. Check nearby sources, tools and inventory space.`,
+        );
+      return `Collected ${collected} ${item} (requested ${wanted}).`;
     } finally {
       this.bot.collectBlock.movements = previous;
       this.bot.pathfinder.setMovements(previous);

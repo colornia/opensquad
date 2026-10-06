@@ -72,6 +72,14 @@ test("timeout keeps the adapter reserved until a late action finishes cleanup", 
   try {
     const job = f.controller.handle("Alex", "collect dirt");
     await started.promise;
+    const stopCount = f.calls.filter((x) => x === "stop").length;
+    await f.controller.handle("Alex", "状态");
+    assert.ok(f.messages.some((x) => x.includes("收集资源")));
+    assert.equal(
+      f.calls.filter((x) => x === "stop").length,
+      stopCount,
+      "status does not interrupt the task",
+    );
     await new Promise((r) => setTimeout(r, 40));
     assert.ok(f.messages.some((x) => x.includes("timed out")));
     await f.controller.handle("Alex", "follow me");

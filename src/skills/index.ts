@@ -1,4 +1,5 @@
 export interface Skills {
+  inventory?(): { name: string; count: number }[];
   stop(): Promise<void>;
   follow(player: string): Promise<string>;
   come(player: string): Promise<string>;

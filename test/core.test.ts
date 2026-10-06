@@ -151,12 +151,14 @@ test("Chinese instructions route to the same skills", () => {
   assert.equal(chineseReply("Following Alex."), "跟上了，Alex。");
   assert.match(
     chineseReply("Couldn't finish: I have no dirt."),
-    /我背包里还没有 dirt/,
+    /我背包里还没有 泥土/,
   );
   assert.match(
     chineseReply("Couldn't finish: No path to the goal!"),
     /换个开阔的位置/,
   );
+  assert.equal(route("状态").kind, "status");
+  assert.equal(route("背包").kind, "inventory");
 });
 test("forget removes only the current player and survives restart", () => {
   const dir = mkdtempSync(join(tmpdir(), "opensquad-"));

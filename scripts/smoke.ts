@@ -107,6 +107,7 @@ async function main() {
     };
     await command("remember likes mining", "I will remember that.");
     await command("follow me", "Following Alex.");
+    await command("状态", "跟随 Alex");
     await command("stop", "Stopped.");
     await command("come here", "I'm here, Alex.");
     await command("protect me", "Protecting Alex");
@@ -127,6 +128,7 @@ async function main() {
       adapter.bot.inventory.items().some((i) => i.name === "dirt"),
       "collected dirt into inventory",
     );
+    await command("背包", "泥土 ×1");
     await command("give me dirt 1", "Dropped 1 dirt");
     await server.setBlock(
       server.overworld,
@@ -145,6 +147,8 @@ async function main() {
       false,
       "mining stopped before acknowledgement",
     );
+    await command("status", "Idle and ready");
+    await command("收集 钻石 1", "这次没有拿到钻石");
     await command("follow me", "Following Alex.");
     await command("stop", "Stopped.");
     assert.deepEqual(

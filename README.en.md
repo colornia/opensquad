@@ -22,6 +22,8 @@ Install Node.js 22 or newer and start a private/local Minecraft Java server. Fro
 
 Stay close to the bot and provide a suitable pickaxe before requesting ores. `!bot help` lists commands. `!bot remember I like exploring caves` saves a preference; `!bot memory` recalls preferences and recent shared events. `!bot forget me` removes your local record.
 
+Use `!bot status` to check the current task or selected mode, and `!bot inventory` to see carried items. Both work during actions and cleanup without interrupting them. Collection reports the actual quantity; collecting nothing produces a failure message rather than a successful event.
+
 ## Data and contributions
 
 Preferences and successful action events live in `data/memory.json`, which is excluded from Git. Ordinary chat is not saved. With an external model enabled, addressed free-form chat, player name, and saved memory are sent to the configured provider. Local deletion does not remove copies held by that provider. Do not include credentials or private server details in issue reports.

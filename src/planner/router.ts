@@ -10,6 +10,7 @@ export type Intent =
         | "recall"
         | "forget";
     }
+  | { kind: "status" | "inventory" }
   | { kind: "collect" | "give"; item: string; count: number }
   | { kind: "remember"; preference: string }
   | { kind: "chat"; text: string };
@@ -22,6 +23,8 @@ export function route(text: string): Intent {
   if (/^(attack( nearby( hostile)? mobs)?|攻击)$/i.test(s))
     return { kind: "attack" };
   if (/^(help|帮助)$/i.test(s)) return { kind: "help" };
+  if (/^(status|状态|你在干什么)$/i.test(s)) return { kind: "status" };
+  if (/^(inventory|背包|背包里有什么)$/i.test(s)) return { kind: "inventory" };
   if (/^(memory|回忆)$/i.test(s)) return { kind: "recall" };
   if (/^(forget me|忘记我|删除我的记忆)$/i.test(s)) return { kind: "forget" };
   const remember = s.match(/^(?:remember|记住)\s+(.+)$/i);

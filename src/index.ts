@@ -25,6 +25,7 @@ adapter.bot.on("spawn", () => {
 });
 adapter.bot.on("death", () => {
   ready = false;
+  controller.invalidate();
 });
 adapter.bot.on("chat", (player, message) => {
   if (
@@ -50,6 +51,7 @@ adapter.bot.on("error", (error) =>
 );
 adapter.bot.on("end", () => {
   ready = false;
+  controller.invalidate();
   console.log("Disconnected. Restart to reconnect.");
   process.exitCode = 1;
 });

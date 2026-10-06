@@ -1,8 +1,8 @@
-import { route } from "./router";
+import { route, type Intent } from "./router";
 import type { Skills } from "../skills";
 import type { Brain } from "../brain";
 import { MemoryStore } from "../memory/store";
-import { isChinese, chineseReply } from "./language";
+import { isChinese, chineseReply, chineseItemName } from "./language";
 import { interruptible } from "./cancellation";
 export class Controller {
   private active?: AbortController;
@@ -10,6 +10,8 @@ export class Controller {
   private stopping?: Promise<void>;
   private completed?: Promise<void>;
   private stopRequests = 0;
+  private task?: Intent;
+  private mode?: { kind: "follow" | "protect" | "attack"; player: string };
   constructor(
     private skills: Skills,
     private brain: Brain,
@@ -19,6 +21,7 @@ export class Controller {
   ) {}
   private stopSkills(): Promise<void> {
     if (this.stopping) return this.stopping;
+    this.mode = undefined;
     const stopping = Promise.resolve().then(() => this.skills.stop());
     this.stopping = stopping;
     const clear = () => {
@@ -30,17 +33,89 @@ export class Controller {
   private async waitForStop() {
     await this.stopping?.catch(() => {});
   }
+  invalidate() {
+    this.mode = undefined;
+    this.active?.abort();
+  }
+  private status(zh: boolean) {
+    if (this.stopRequests || this.stopping || this.active?.signal.aborted)
+      return zh
+        ? "我正在收尾，停稳后才能接新任务。"
+        : "Finishing cleanup before another task.";
+    if (this.running && this.task) {
+      const names: Record<string, string> = {
+        collect: "收集资源",
+        give: "交付物品",
+        come: "走到你身边",
+        follow: "启动跟随",
+        protect: "启动保护",
+        attack: "启动攻击",
+        chat: "等待聊天回复",
+        remember: "保存偏好",
+        forget: "删除记录",
+        recall: "查看记忆",
+      };
+      const detail =
+        "item" in this.task
+          ? ` ${zh ? chineseItemName(this.task.item) : this.task.item}`
+          : "";
+      return zh
+        ? `我正在${names[this.task.kind] ?? "处理指令"}${detail}。`
+        : `Current task: ${this.task.kind}${detail}.`;
+    }
+    if (this.mode) {
+      const { kind, player } = this.mode;
+      return zh
+        ? `当前模式：${kind === "follow" ? "跟随" : kind === "protect" ? "保护" : "攻击"}${kind === "attack" ? "附近怪物" : ` ${player}`}。`
+        : `Active mode: ${kind}${kind === "attack" ? " nearby hostile mobs" : ` ${player}`}.`;
+    }
+    return zh ? "我现在空闲，可以叫我一起走。" : "Idle and ready for a task.";
+  }
   async handle(player: string, text: string) {
     const intent = route(text);
     const zh = isChinese(text);
     const say = (message: string) =>
       this.say(zh ? chineseReply(message) : message);
+    if (intent.kind === "status") {
+      this.say(this.status(zh));
+      return;
+    }
+    if (intent.kind === "inventory") {
+      try {
+        const items = this.skills.inventory?.();
+        if (!items) {
+          this.say(
+            zh
+              ? "这个游戏适配器还不能查看背包。"
+              : "This adapter does not support inventory queries.",
+          );
+          return;
+        }
+        const summary = items
+          .slice(0, 8)
+          .map((i) => `${zh ? chineseItemName(i.name) : i.name} ×${i.count}`)
+          .join(zh ? "，" : ", ");
+        this.say(
+          zh
+            ? `背包：${summary || "还没有物品"}${items.length > 8 ? `，另有 ${items.length - 8} 种物品` : ""}。`
+            : `Inventory: ${summary || "empty"}${items.length > 8 ? `, plus ${items.length - 8} other item types` : ""}.`,
+        );
+      } catch {
+        this.say(
+          zh
+            ? "暂时读不到背包，等进服后再试。"
+            : "Inventory is not available yet. Try again after joining.",
+        );
+      }
+      return;
+    }
     if (intent.kind === "stop") {
       this.stopRequests++;
       this.active?.abort();
       try {
         await this.stopSkills();
         await this.completed;
+        this.mode = undefined;
         say("Stopped.");
       } catch {
         say("Couldn't stop cleanly. Wait for the current action or reconnect.");
@@ -54,6 +129,7 @@ export class Controller {
       return;
     }
     this.running = true;
+    this.task = intent;
     let complete!: () => void;
     this.completed = new Promise<void>((resolve) => {
       complete = resolve;
@@ -67,8 +143,8 @@ export class Controller {
       if (intent.kind === "help") {
         say(
           zh
-            ? "跟着我 | 停下 | 过来 | 收集 橡木 3 | 给我 橡木 3 | 保护我 | 攻击 | 记住 <偏好> | 回忆 | 忘记我"
-            : "follow me | stop | come here | collect oak_log 3 | give me oak_log 3 | protect me | attack nearby hostile mobs | remember <preference> | memory | forget me",
+            ? "跟着我 | 停下 | 过来 | 收集 橡木 3 | 给我 橡木 3 | 保护我 | 攻击 | 状态 | 背包 | 记住 <偏好> | 回忆 | 忘记我"
+            : "follow me | stop | come here | collect oak_log 3 | give me oak_log 3 | protect me | attack nearby hostile mobs | status | inventory | remember <preference> | memory | forget me",
         );
         return;
       }
@@ -119,6 +195,7 @@ export class Controller {
         return;
       }
       await this.stopSkills();
+      this.mode = undefined;
       abort.signal.throwIfAborted();
       const deadline = new Promise<never>((_, reject) => {
         timer = setTimeout(() => {
@@ -153,6 +230,12 @@ export class Controller {
       work = action();
       const result = await Promise.race([work, deadline]);
       abort.signal.throwIfAborted();
+      if (
+        intent.kind === "follow" ||
+        intent.kind === "protect" ||
+        intent.kind === "attack"
+      )
+        this.mode = { kind: intent.kind, player };
       this.memory.event(player, result);
       say(result);
     } catch (error) {
@@ -173,6 +256,7 @@ export class Controller {
       this.completed = undefined;
       if (this.active === abort) this.active = undefined;
       this.running = false;
+      this.task = undefined;
       complete();
     }
   }
