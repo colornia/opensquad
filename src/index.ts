@@ -3,7 +3,7 @@ import { MinecraftAdapter } from "./minecraft/adapter";
 import { createBrain } from "./brain";
 import { MemoryStore } from "./memory/store";
 import { Controller } from "./planner/controller";
-import { addressed } from "./planner/router";
+import { bindChatSession } from "./minecraft/chat-session";
 import { connectionHint } from "./setup/diagnostics";
 const config = loadConfig();
 const memory = new MemoryStore(config.memoryPath);
@@ -15,30 +15,23 @@ const controller = new Controller(
   (text) => adapter.say(text),
   config.timeout,
 );
-let ready = false;
-adapter.bot.on("spawn", () => {
-  ready = true;
-  console.log(
-    `Connected to ${config.host}:${config.port} as ${config.username}`,
-  );
-  adapter.say(`我来了！输入 ${config.prefix} 帮助 / help 看看可以一起做什么。`);
-});
-adapter.bot.on("death", () => {
-  ready = false;
-  controller.invalidate();
-});
-adapter.bot.on("chat", (player, message) => {
-  if (
-    !ready ||
-    player === adapter.bot.username ||
-    (config.allowedPlayers.length && !config.allowedPlayers.includes(player))
-  )
-    return;
-  const text = addressed(message, config.prefix, config.username);
-  if (text === null) return;
-  void controller
-    .handle(player, text)
-    .catch((error) => console.error("Command failed:", error.message));
+bindChatSession(adapter.bot, controller, config, {
+  ready(respawned) {
+    console.log(
+      `Connected to ${config.host}:${config.port} as ${adapter.bot.username}`,
+    );
+    adapter.say(
+      respawned
+        ? "我重生了，之前的任务已取消。想继续的话，重新叫我跟着你吧。"
+        : `我来了！输入 ${config.prefix} 帮助 / help 看看可以一起做什么。`,
+    );
+  },
+  error(error) {
+    console.error(
+      "Command failed:",
+      error instanceof Error ? error.message : error,
+    );
+  },
 });
 adapter.bot.on("kicked", (reason) => console.error("Kicked:", reason));
 adapter.bot.on("error", (error) =>
@@ -50,8 +43,6 @@ adapter.bot.on("error", (error) =>
   ),
 );
 adapter.bot.on("end", () => {
-  ready = false;
-  controller.invalidate();
   console.log("Disconnected. Restart to reconnect.");
   process.exitCode = 1;
 });

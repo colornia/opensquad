@@ -8,7 +8,7 @@ import { MinecraftAdapter } from "../src/minecraft/adapter";
 import { Controller } from "../src/planner/controller";
 import { MemoryStore } from "../src/memory/store";
 import { MockBrain } from "../src/brain";
-import { addressed } from "../src/planner/router";
+import { bindChatSession } from "../src/minecraft/chat-session";
 import { loadConfig } from "../src/config";
 import mineflayer from "mineflayer";
 const squid = require("flying-squid");
@@ -54,16 +54,32 @@ async function main() {
         adapter!.say(t);
       },
     );
-    adapter.bot.on("chat", (player, message) => {
-      const text = addressed(message, "!bot", "OpenSquad");
-      if (player !== "OpenSquad" && text !== null)
-        void controller.handle(player, text);
-    });
+    const respawns: boolean[] = [];
+    bindChatSession(
+      adapter.bot,
+      controller,
+      {
+        prefix: "!bot",
+        allowedPlayers: ["Alex"],
+      },
+      { ready: (respawned) => respawns.push(respawned) },
+    );
     await once(adapter.bot, "spawn");
     await new Promise((r) => setTimeout(r, 500));
     const botPlayer = server.players.find(
       (p: any) => p.username === "OpenSquad",
     );
+    // Current protocol decoding uses an enum string; Flying Squid's legacy handler expects 0.
+    botPlayer._client.on("client_command", (packet: { actionId: unknown }) => {
+      if (packet.actionId !== "perform_respawn") return;
+      void botPlayer.behavior("requestRespawn", {}, () => {
+        botPlayer._sendRespawn();
+        botPlayer.sendSelfPosition();
+        botPlayer.updateHealth(20);
+        botPlayer.nearbyEntities = [];
+        botPlayer.updateAndSpawn();
+      });
+    });
     const cx = Math.floor(adapter.bot.entity.position.x / 16),
       cz = Math.floor(adapter.bot.entity.position.z / 16);
     for (let x = cx - 2; x <= cx + 2; x++)
@@ -396,13 +412,42 @@ async function main() {
       "basic chat uses the saved preference",
     );
     await command("回忆", "我喜欢探索矿洞");
+    await command("跟着我", "跟上了，Alex。");
+    const death = once(adapter.bot, "death", {
+      signal: AbortSignal.timeout(7000),
+    });
+    const respawn = once(adapter.bot, "spawn", {
+      signal: AbortSignal.timeout(7000),
+    });
+    botPlayer.updateHealth(0);
+    await death;
+    await respawn;
+    assert.deepEqual(
+      respawns,
+      [false, true],
+      "shared chat session observes death and respawn",
+    );
+    assert.equal(
+      adapter.bot.pathfinder.goal,
+      null,
+      "death clears the old follow goal",
+    );
+    for (let x = cx - 2; x <= cx + 2; x++)
+      for (let z = cz - 2; z <= cz + 2; z++)
+        await botPlayer.sendChunk(x, z, await server.overworld.getColumn(x, z));
+    await adapter.bot.waitForChunksToLoad();
+    await command("状态", "空闲");
+    await command("回忆", "我喜欢探索矿洞");
+    await placePlayer();
+    await command("跟着我", "跟上了，Alex。");
+    await command("停下", "好，停下了。");
     await command("忘记我", "已经删除你的本地偏好和合作记录。");
     assert.deepEqual(new MemoryStore(join(dir, "memory.json")).get("Alex"), {
       preferences: [],
       events: [],
     });
     console.log(
-      "PASS: two real clients, chat round trips, follow/stop/come/protect/attack, dirt collection, handoff, persistent memory.",
+      "PASS: two real clients, shared chat entry, follow/stop/come/protect/attack, dirt collection, handoff, persistent memory, death/respawn recovery.",
     );
   } finally {
     clearTimeout(watchdog);

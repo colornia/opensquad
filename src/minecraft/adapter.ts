@@ -55,9 +55,10 @@ export class MinecraftAdapter implements Skills {
     this.bot.on("end", () => {
       if (this.companionTimer) clearInterval(this.companionTimer);
     });
-    this.bot.on("death", () => {
-      void this.stop().catch(() => {});
-    });
+    for (const event of ["death", "respawn"] as const)
+      this.bot.on(event, () => {
+        void this.stop().catch(() => {});
+      });
   }
   say(text: string) {
     for (const chunk of text
