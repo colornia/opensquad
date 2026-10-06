@@ -10,6 +10,7 @@ export class Controller {
   private stopping?: Promise<void>;
   private completed?: Promise<void>;
   private stopRequests = 0;
+  private session = 0;
   private task?: Intent;
   private mode?: { kind: "follow" | "protect" | "attack"; player: string };
   constructor(
@@ -34,6 +35,7 @@ export class Controller {
     await this.stopping?.catch(() => {});
   }
   invalidate() {
+    this.session++;
     this.mode = undefined;
     this.active?.abort();
   }
@@ -72,12 +74,15 @@ export class Controller {
     return zh ? "我现在空闲，可以叫我一起走。" : "Idle and ready for a task.";
   }
   async handle(player: string, text: string) {
+    const session = this.session;
+    const emit = (message: string) => {
+      if (this.session === session) this.say(message);
+    };
     const intent = route(text);
     const zh = isChinese(text);
-    const say = (message: string) =>
-      this.say(zh ? chineseReply(message) : message);
+    const say = (message: string) => emit(zh ? chineseReply(message) : message);
     if (intent.kind === "invalid") {
-      this.say(intent.message);
+      emit(intent.message);
       return;
     }
     if (intent.kind === "help") {
@@ -90,7 +95,7 @@ export class Controller {
     }
     if (intent.kind === "recall") {
       const m = this.memory.get(player);
-      this.say(
+      emit(
         zh
           ? `记住的偏好：${m.preferences.join("；") || "还没有"}。最近一起做的事：${
               m.events
@@ -108,14 +113,14 @@ export class Controller {
       return;
     }
     if (intent.kind === "status") {
-      this.say(this.status(zh));
+      emit(this.status(zh));
       return;
     }
     if (intent.kind === "inventory") {
       try {
         const items = this.skills.inventory?.();
         if (!items) {
-          this.say(
+          emit(
             zh
               ? "这个游戏适配器还不能查看背包。"
               : "This adapter does not support inventory queries.",
@@ -126,13 +131,13 @@ export class Controller {
           .slice(0, 8)
           .map((i) => `${zh ? chineseItemName(i.name) : i.name} ×${i.count}`)
           .join(zh ? "，" : ", ");
-        this.say(
+        emit(
           zh
             ? `背包：${summary || "还没有物品"}${items.length > 8 ? `，另有 ${items.length - 8} 种物品` : ""}。`
             : `Inventory: ${summary || "empty"}${items.length > 8 ? `, plus ${items.length - 8} other item types` : ""}.`,
         );
       } catch {
-        this.say(
+        emit(
           zh
             ? "暂时读不到背包，等进服后再试。"
             : "Inventory is not available yet. Try again after joining.",
@@ -178,7 +183,7 @@ export class Controller {
       }
       if (intent.kind === "forget") {
         this.memory.forget(player);
-        this.say(
+        emit(
           zh
             ? "已经删除你的本地偏好和合作记录。"
             : "Your local preferences and shared events have been deleted.",
@@ -195,7 +200,7 @@ export class Controller {
         );
         const reply = await replyWork;
         abort.signal.throwIfAborted();
-        this.say(reply);
+        emit(reply);
         return;
       }
       await this.stopSkills();
@@ -245,7 +250,7 @@ export class Controller {
         this.memory.event(player, result);
       } catch (error) {
         if (!(error instanceof MemoryWriteError)) throw error;
-        this.say(
+        emit(
           zh
             ? "动作已完成，但这次合作记录没能保存。请检查本地存储权限和空间。"
             : "The action finished, but its event could not be saved. Check local storage permissions and space.",
@@ -253,7 +258,7 @@ export class Controller {
       }
     } catch (error) {
       if (error instanceof MemoryWriteError) {
-        this.say(
+        emit(
           zh
             ? "记忆文件没能更新，保存或删除尚未完成。请检查本地存储权限和空间后重试。"
             : "Memory update failed; saving or deletion has not completed. Check local storage permissions and space, then retry.",

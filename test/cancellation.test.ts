@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Controller } from "../src/planner/controller";
 import { MemoryStore } from "../src/memory/store";
-import { MockBrain } from "../src/brain";
+import { MockBrain, type Brain } from "../src/brain";
 import type { Skills } from "../src/skills";
 
 function deferred<T>() {
@@ -14,7 +14,11 @@ function deferred<T>() {
   return { promise, resolve };
 }
 const tick = () => new Promise<void>((r) => setImmediate(r));
-function fixture(overrides: Partial<Skills>, timeout = 20) {
+function fixture(
+  overrides: Partial<Skills>,
+  timeout = 20,
+  brain: Brain = new MockBrain(),
+) {
   const dir = mkdtempSync(join(tmpdir(), "opensquad-cancel-"));
   const messages: string[] = [];
   const calls: string[] = [];
@@ -47,7 +51,7 @@ function fixture(overrides: Partial<Skills>, timeout = 20) {
   return {
     controller: new Controller(
       skills,
-      new MockBrain(),
+      brain,
       memory,
       (text) => messages.push(text),
       timeout,
@@ -58,6 +62,62 @@ function fixture(overrides: Partial<Skills>, timeout = 20) {
     dispose: () => rmSync(dir, { recursive: true, force: true }),
   };
 }
+test("session invalidation discards delayed action and stop feedback", async () => {
+  const started = deferred<void>(),
+    unwind = deferred<void>();
+  const f = fixture(
+    {
+      async collect() {
+        started.resolve();
+        await unwind.promise;
+        return "old collection finished";
+      },
+    },
+    10000,
+  );
+  try {
+    const job = f.controller.handle("Alex", "collect dirt");
+    await started.promise;
+    const stop = f.controller.handle("Alex", "stop");
+    await tick();
+    f.controller.invalidate();
+    unwind.resolve();
+    await Promise.all([job, stop]);
+    assert.deepEqual(
+      f.messages,
+      [],
+      "no old-session feedback after death or disconnect",
+    );
+    assert.deepEqual(f.memory.get("Alex").events, []);
+    await f.controller.handle("Alex", "status");
+    assert.match(f.messages.at(-1)!, /Idle/);
+    await f.controller.handle("Alex", "follow me");
+    assert.equal(f.messages.at(-1), "following");
+  } finally {
+    unwind.resolve();
+    f.dispose();
+  }
+});
+
+test("session invalidation silences canceled chat while the next session remains usable", async () => {
+  const answer = deferred<string>();
+  const f = fixture({}, 10000, { reply: () => answer.promise });
+  try {
+    const job = f.controller.handle("Alex", "hello");
+    await tick();
+    f.controller.invalidate();
+    await job;
+    assert.deepEqual(f.messages, []);
+    await f.controller.handle("Alex", "follow me");
+    answer.resolve("old model reply");
+    await tick();
+    assert.deepEqual(f.messages, ["following"]);
+  } finally {
+    answer.resolve("cleanup");
+    f.dispose();
+  }
+});
+
 test("help and memory remain available during collection and stop cleanup", async () => {
   const started = deferred<void>(),
     unwind = deferred<void>();

@@ -1,7 +1,5 @@
 # OpenSquad v0.1
 
-The local network smoke includes stopping collection after a block is dug and accepting a new follow command afterward. Conversation cancellation is tested with a deliberately delayed provider: the next game command can run before that provider returns, and its late reply is discarded.
-
 [中文首页](../README.md) · [English overview](../README.en.md)
 
 The controller retains its action lock after a timeout until the underlying skill settles. Stop requests share a single cleanup operation and wait for any finite action to unwind before confirming completion. A third-party skill that never settles can therefore keep the bot busy; reconnect rather than starting overlapping actions. Late canceled results are neither announced nor persisted.
@@ -26,7 +24,7 @@ Copy `.env.example` to `.env` (`Copy-Item .env.example .env` in PowerShell, or `
 npm run dev
 ```
 
-For a compiled run use `npm run build` followed by `npm start`. The bot prints a connection message and announces `Ready! Use !bot help.` in game. No API account or key is required. Run one bot process per memory file.
+For a compiled run use `npm run build` followed by `npm start`. The bot prints a connection message and announces its arrival in Chinese with a help command in game. No API account or key is required. Run one bot process per memory file.
 
 For the simplest offline test server, use a private Java server with `online-mode=false` and bind it to `127.0.0.1` in `server.properties`. For a server using account authentication, set `MC_AUTH=microsoft` and `MC_USERNAME` to the bot account identifier; follow Mineflayer's first-run Microsoft sign-in instructions in the terminal. The account must have Java Edition access and be permitted by the server whitelist. Offline mode is intended for an isolated local server. A single-player world opened to LAN also works: use its displayed LAN port, which changes between sessions.
 
@@ -60,6 +58,8 @@ Combat is deliberately basic: a fixed hostile allowlist, bounded range, pursuit,
 
 ## Architecture and LLM configuration
 
+Death and disconnect call `Controller.invalidate()`, canceling active work and clearing the selected mode. Each request captures a session counter; feedback from an invalidated session is discarded, including delayed stop acknowledgments and cancellation errors. Finite actions retain their cleanup lock until settled, and aborted results are not persisted. Chat cancellation releases the lock without waiting for an uncooperative provider. Controller tests cover delayed actions and model replies across invalidation; they do not simulate a full vanilla death/respawn cycle.
+
 `src/minecraft/visibility.ts` checks loaded cells along the line from the bot's head to the target's torso and raycasts against block collision shapes before attacking. Blocked attempts do not consume cooldown. This is a conservative hit check, not a planner for navigating around obstacles or finding exposed body parts. The protocol smoke builds a solid wall, verifies no attacks, then removes it and checks damage.
 
 Memory mutations are committed to the in-memory snapshot only after atomic file replacement succeeds. Storage failures raise `MemoryWriteError` with a generic public message and retain the previous snapshot; game chat never formats its underlying filesystem cause. Failed event persistence reports a separate warning after the completed skill result, rather than canceling the action or active mode. Loaded valid files also retain only the latest 20 preferences and 50 events per player.
@@ -79,6 +79,8 @@ Status, inventory, help and memory queries bypass the action lock, do not call t
 Configuration is in `.env.example` with defaults in `src/config.ts`. Numeric settings are range-validated. The bot exits on disconnect; restart it after correcting a port/version/authentication problem. There is no automatic reconnect loop.
 
 ## Verification
+
+The local network smoke includes stopping collection after a block is dug and accepting a new follow command afterward. Conversation cancellation is tested with a deliberately delayed provider: the next game command can run before that provider returns, and its late reply is discarded.
 
 The combat portion uses stationary protocol-server mobs and temporarily disables the teammate client's movement physics to isolate attack delivery and target selection. Health changes use the server's normal damage handler. The fixture explicitly synchronizes the chat player's teleport position; movement physics is restored for collection and handoff. These checks do not establish pursuit or survival performance against autonomous mobs.
 
