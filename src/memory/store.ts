@@ -3,13 +3,26 @@ import {
   readFileSync,
   writeFileSync,
   renameSync,
-  existsSync,
   rmSync,
 } from "node:fs";
 import { dirname } from "node:path";
 export interface PlayerMemory {
   preferences: string[];
   events: { at: string; text: string }[];
+}
+export class MemoryReadError extends Error {
+  constructor(
+    public reason: "unreadable" | "invalid",
+    cause?: unknown,
+  ) {
+    super(
+      reason === "invalid"
+        ? "Invalid memory file"
+        : "Memory file could not be read",
+      { cause },
+    );
+    this.name = "MemoryReadError";
+  }
 }
 export class MemoryWriteError extends Error {
   constructor(cause: unknown) {
@@ -23,28 +36,42 @@ export class MemoryWriteError extends Error {
 export class MemoryStore {
   private data: Record<string, PlayerMemory> = Object.create(null);
   constructor(private path: string) {
-    if (existsSync(path)) {
-      const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-        throw new Error("Invalid memory file");
-      for (const [name, value] of Object.entries(parsed)) {
-        const p = value as PlayerMemory;
-        if (
-          !p ||
-          typeof p !== "object" ||
-          !Array.isArray(p.preferences) ||
-          !p.preferences.every((x) => typeof x === "string") ||
-          !Array.isArray(p.events) ||
-          !p.events.every(
-            (x) => typeof x.at === "string" && typeof x.text === "string",
-          )
+    let content: string;
+    try {
+      content = readFileSync(path, "utf8");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+      throw new MemoryReadError("unreadable", error);
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(content);
+    } catch (error) {
+      throw new MemoryReadError("invalid", error);
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+      throw new MemoryReadError("invalid");
+    for (const [name, value] of Object.entries(parsed)) {
+      const p = value as PlayerMemory;
+      if (
+        !p ||
+        typeof p !== "object" ||
+        !Array.isArray(p.preferences) ||
+        !p.preferences.every((x) => typeof x === "string") ||
+        !Array.isArray(p.events) ||
+        !p.events.every(
+          (x) =>
+            x !== null &&
+            typeof x === "object" &&
+            typeof x.at === "string" &&
+            typeof x.text === "string",
         )
-          throw new Error("Invalid memory record");
-        this.data[name] = {
-          preferences: p.preferences.slice(-20),
-          events: p.events.slice(-50),
-        };
-      }
+      )
+        throw new MemoryReadError("invalid");
+      this.data[name] = {
+        preferences: p.preferences.slice(-20),
+        events: p.events.slice(-50),
+      };
     }
   }
   get(player: string): PlayerMemory {

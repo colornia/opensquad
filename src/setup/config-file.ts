@@ -1,5 +1,5 @@
 import { writeFileSync } from "node:fs";
-import { loadConfig } from "../config";
+import { loadConfig, ConfigurationError } from "../config";
 
 export interface SetupAnswers {
   host: string;
@@ -20,8 +20,9 @@ export function createConfigFile(
     MC_AUTH: answers.auth,
   });
   if (answers.player && !/^[a-zA-Z0-9_]{3,16}$/.test(answers.player))
-    throw new Error(
-      "Player name must contain 3–16 letters, numbers or underscores",
+    throw new ConfigurationError(
+      "ALLOWED_PLAYERS",
+      "游戏角色名需要 3 到 16 个英文字母、数字或下划线。",
     );
   const values: Record<string, string> = {
     MC_HOST: answers.host.trim(),

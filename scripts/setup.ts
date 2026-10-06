@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import { createConfigFile, type SetupAnswers } from "../src/setup/config-file";
+import { ConfigurationError } from "../src/config";
+import { startupHint } from "../src/setup/diagnostics";
 
 async function main() {
   const target = resolve(".env");
@@ -74,7 +76,7 @@ async function main() {
 }
 void main().catch((error) => {
   console.error(
-    `配置没有完成：${error instanceof Error ? error.message : "请检查输入"}`,
+    `配置没有完成：${error instanceof ConfigurationError ? startupHint(error) : error instanceof Error ? error.message : "请检查输入"}`,
   );
   process.exitCode = 1;
 });

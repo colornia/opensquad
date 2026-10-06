@@ -1,6 +1,11 @@
 import { existsSync } from "node:fs";
 import { loadConfig } from "../src/config";
-import { connectionHint, probeConnection } from "../src/setup/diagnostics";
+import {
+  connectionHint,
+  probeConnection,
+  startupHint,
+} from "../src/setup/diagnostics";
+import { MemoryStore } from "../src/memory/store";
 
 async function main() {
   if (!existsSync(".env"))
@@ -8,7 +13,8 @@ async function main() {
       "还没有 .env；本次使用本机默认地址。可以先运行 npm run setup。",
     );
   const config = loadConfig();
-  console.log("配置格式正常。正在检查服务器能否接受连接……");
+  new MemoryStore(config.memoryPath);
+  console.log("配置格式和记忆文件检查通过。正在检查服务器能否接受连接……");
   try {
     await probeConnection(config.host, config.port);
   } catch (error) {
@@ -29,8 +35,6 @@ async function main() {
     console.log("没有填写模型密钥，会使用基础聊天模式；游戏指令仍能使用。");
 }
 void main().catch((error) => {
-  console.error(
-    `配置检查失败：${error instanceof Error ? error.message : "请检查 .env"}`,
-  );
+  console.error(`检查没有通过：${startupHint(error)}`);
   process.exitCode = 1;
 });

@@ -1,4 +1,16 @@
 import { createConnection } from "node:net";
+import { ConfigurationError } from "../config";
+import { MemoryReadError } from "../memory/store";
+
+export function startupHint(error: unknown): string {
+  if (error instanceof ConfigurationError)
+    return `配置项 ${error.setting} 不正确。${error.hint} 修改 .env 后运行 npm run doctor 再检查。`;
+  if (error instanceof MemoryReadError)
+    return error.reason === "invalid"
+      ? "记忆文件格式不正确，已经停止启动，原文件没有改写。先备份 MEMORY_PATH 指定的文件，再修复内容或换用新的记忆文件。"
+      : "记忆文件无法读取，已经停止启动。先备份 MEMORY_PATH 指定的文件，检查读取权限、文件类型和存储状态后重试。";
+  return "机器人还没能启动。先运行 npm run doctor 检查配置与连接，再核对 MC_VERSION 和登录方式。";
+}
 
 export function connectionHint(error: unknown): string {
   const code = (error as { code?: string })?.code;

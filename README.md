@@ -47,7 +47,7 @@ MC_PORT=25565
 MC_USERNAME=OpenSquad
 ```
 
-先启动服务器，用 `npm run doctor` 检查端口是否能连接，再运行：
+先启动服务器，用 `npm run doctor` 检查配置、记忆文件和端口连接，再运行：
 
 ```sh
 npm run dev
