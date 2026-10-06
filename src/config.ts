@@ -26,6 +26,7 @@ export function loadConfig() {
       .map((s) => s.trim())
       .filter(Boolean),
     memoryPath: process.env.MEMORY_PATH ?? "data/memory.json",
+    authCachePath: "data/auth-cache",
     collectRadius: integer("COLLECT_RADIUS", 32, 1, 64),
     maxCollect: integer("MAX_COLLECT", 16, 1, 64),
     timeout: integer("ACTION_TIMEOUT_MS", 45000, 1000, 300000),

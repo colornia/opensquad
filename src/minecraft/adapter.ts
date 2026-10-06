@@ -39,6 +39,7 @@ export class MinecraftAdapter implements Skills {
       username: config.username,
       auth: config.auth,
       version: config.version,
+      profilesFolder: config.authCachePath,
     });
     this.bot.loadPlugin(pathfinder);
     this.bot.loadPlugin(collectBlock);
@@ -101,7 +102,7 @@ export class MinecraftAdapter implements Skills {
       birch_log: ["birch_log"],
       spruce_log: ["spruce_log"],
     };
-    const names = sources[item];
+    const names = Object.hasOwn(sources, item) ? sources[item] : undefined;
     if (!names)
       throw new Error(
         "Collect supports oak_log, birch_log, spruce_log, dirt, sand, cobblestone, coal, raw_iron, diamond.",

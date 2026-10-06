@@ -20,7 +20,7 @@ adapter.bot.on("spawn", () => {
   console.log(
     `Connected to ${config.host}:${config.port} as ${config.username}`,
   );
-  adapter.say(`Ready! Use ${config.prefix} help.`);
+  adapter.say(`我来了！输入 ${config.prefix} 帮助 / help 看看可以一起做什么。`);
 });
 adapter.bot.on("death", () => {
   ready = false;

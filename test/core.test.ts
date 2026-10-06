@@ -8,6 +8,7 @@ import { MemoryStore } from "../src/memory/store";
 import { Controller } from "../src/planner/controller";
 import { MockBrain, createBrain } from "../src/brain";
 import type { Skills } from "../src/skills";
+import { chineseReply } from "../src/planner/language";
 test("required intents route without a brain", () => {
   for (const [text, kind] of [
     ["follow me", "follow"],
@@ -126,5 +127,46 @@ test("missing keys and provider failures retain a usable fallback", async () => 
     else process.env.BRAIN_PROVIDER = oldProvider;
     if (oldKey === undefined) delete process.env.LLM_API_KEY;
     else process.env.LLM_API_KEY = oldKey;
+  }
+});
+test("Chinese instructions route to the same skills", () => {
+  assert.deepEqual(route("收集 橡木 3"), {
+    kind: "collect",
+    item: "oak_log",
+    count: 3,
+  });
+  assert.deepEqual(route("给我 白桦木原木 2个"), {
+    kind: "give",
+    item: "birch_log",
+    count: 2,
+  });
+  assert.deepEqual(route("收集 dirt 4"), {
+    kind: "collect",
+    item: "dirt",
+    count: 4,
+  });
+  assert.equal(route("跟着我！").kind, "follow");
+  assert.equal(route("忘记我").kind, "forget");
+  assert.equal(route("forget Alex").kind, "chat");
+  assert.equal(chineseReply("Following Alex."), "跟上了，Alex。");
+  assert.match(
+    chineseReply("Couldn't finish: I have no dirt."),
+    /我背包里还没有 dirt/,
+  );
+});
+test("forget removes only the current player and survives restart", () => {
+  const dir = mkdtempSync(join(tmpdir(), "opensquad-"));
+  try {
+    const path = join(dir, "memory.json");
+    const m = new MemoryStore(path);
+    m.remember("Alex", "private preference");
+    m.event("Alex", "private event");
+    m.remember("Steve", "other player");
+    m.forget("Alex");
+    const reloaded = new MemoryStore(path);
+    assert.deepEqual(reloaded.get("Alex"), { preferences: [], events: [] });
+    assert.deepEqual(reloaded.get("Steve").preferences, ["other player"]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });

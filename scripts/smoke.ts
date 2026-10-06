@@ -132,6 +132,15 @@ async function main() {
       new MemoryStore(join(dir, "memory.json")).get("Alex").preferences,
       ["likes mining"],
     );
+    await command("跟着我", "跟上了，Alex。");
+    await command("停下", "好，停下了。");
+    await command("记住 我喜欢探索矿洞", "记住了");
+    await command("回忆", "我喜欢探索矿洞");
+    await command("忘记我", "已经删除你的本地偏好和合作记录。");
+    assert.deepEqual(new MemoryStore(join(dir, "memory.json")).get("Alex"), {
+      preferences: [],
+      events: [],
+    });
     console.log(
       "PASS: two real clients, chat round trips, follow/stop/come/protect/attack, dirt collection, handoff, persistent memory.",
     );

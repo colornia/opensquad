@@ -48,10 +48,19 @@ export class MemoryStore {
     p.events = p.events.slice(-50);
     this.save(player, p);
   }
+  forget(player: string) {
+    delete this.data[player];
+    this.persist();
+  }
   private save(player: string, p: PlayerMemory) {
     this.data[player] = p;
+    this.persist();
+  }
+  private persist() {
     mkdirSync(dirname(this.path), { recursive: true });
-    writeFileSync(`${this.path}.tmp`, JSON.stringify(this.data, null, 2));
+    writeFileSync(`${this.path}.tmp`, JSON.stringify(this.data, null, 2), {
+      mode: 0o600,
+    });
     renameSync(`${this.path}.tmp`, this.path);
   }
 }

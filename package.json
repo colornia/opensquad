@@ -1,6 +1,6 @@
 {
   "name": "opensquad",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "An open-source Minecraft teammate",
   "license": "MIT",
@@ -12,7 +12,8 @@
     "check": "npm run build && npm test",
     "smoke": "tsx scripts/smoke.ts",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "privacy:check": "tsx scripts/privacy-check.ts"
   },
   "engines": {
     "node": ">=22"

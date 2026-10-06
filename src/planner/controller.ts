@@ -2,6 +2,7 @@ import { route } from "./router";
 import type { Skills } from "../skills";
 import type { Brain } from "../brain";
 import { MemoryStore } from "../memory/store";
+import { isChinese, chineseReply } from "./language";
 export class Controller {
   private active?: AbortController;
   private running = false;
@@ -14,14 +15,17 @@ export class Controller {
   ) {}
   async handle(player: string, text: string) {
     const intent = route(text);
+    const zh = isChinese(text);
+    const say = (message: string) =>
+      this.say(zh ? chineseReply(message) : message);
     if (intent.kind === "stop") {
       this.active?.abort();
       await this.skills.stop();
-      this.say("Stopped.");
+      say("Stopped.");
       return;
     }
     if (this.running) {
-      this.say("I am busy. Say stop before another command.");
+      say("I am busy. Say stop before another command.");
       return;
     }
     this.running = true;
@@ -30,25 +34,43 @@ export class Controller {
     let timer: NodeJS.Timeout | undefined;
     try {
       if (intent.kind === "help") {
-        this.say(
-          "follow me | stop | come here | collect oak_log 3 | give me oak_log 3 | protect me | attack nearby hostile mobs | remember <preference> | memory",
+        say(
+          zh
+            ? "跟着我 | 停下 | 过来 | 收集 橡木 3 | 给我 橡木 3 | 保护我 | 攻击 | 记住 <偏好> | 回忆 | 忘记我"
+            : "follow me | stop | come here | collect oak_log 3 | give me oak_log 3 | protect me | attack nearby hostile mobs | remember <preference> | memory | forget me",
         );
         return;
       }
       if (intent.kind === "remember") {
         this.memory.remember(player, intent.preference);
-        this.say("I will remember that.");
+        say("I will remember that.");
+        return;
+      }
+      if (intent.kind === "forget") {
+        this.memory.forget(player);
+        this.say(
+          zh
+            ? "已经删除你的本地偏好和合作记录。"
+            : "Your local preferences and shared events have been deleted.",
+        );
         return;
       }
       if (intent.kind === "recall") {
         const m = this.memory.get(player);
         this.say(
-          `Preferences: ${m.preferences.join("; ") || "none"}. Recent events: ${
-            m.events
-              .slice(-3)
-              .map((e) => e.text)
-              .join("; ") || "none"
-          }.`,
+          zh
+            ? `记住的偏好：${m.preferences.join("；") || "还没有"}。最近一起做的事：${
+                m.events
+                  .slice(-3)
+                  .map((e) => chineseReply(e.text))
+                  .join("；") || "还没有"
+              }。`
+            : `Preferences: ${m.preferences.join("; ") || "none"}. Recent events: ${
+                m.events
+                  .slice(-3)
+                  .map((e) => e.text)
+                  .join("; ") || "none"
+              }.`,
         );
         return;
       }
@@ -95,9 +117,9 @@ export class Controller {
       const result = await Promise.race([action(), deadline]);
       abort.signal.throwIfAborted();
       this.memory.event(player, result);
-      this.say(result);
+      say(result);
     } catch (error) {
-      this.say(
+      say(
         abort.signal.aborted
           ? "Action stopped or timed out."
           : `Couldn't finish: ${error instanceof Error ? error.message : "unknown error"}`,

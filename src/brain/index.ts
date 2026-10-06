@@ -1,4 +1,5 @@
 import type { PlayerMemory } from "../memory/store";
+import { isChinese } from "../planner/language";
 export interface BrainContext {
   player: string;
   text: string;
@@ -9,6 +10,8 @@ export interface Brain {
 }
 export class MockBrain implements Brain {
   async reply(c: BrainContext) {
+    if (isChinese(c.text))
+      return `我在，${c.player}。${c.memory.preferences.length ? `我记得你说过：${c.memory.preferences.at(-1)}。` : ""}现在用的是基础聊天模式，你可以叫我跟着走、收集橡木，或者保护你。`;
     return `I'm here, ${c.player}. ${c.memory.preferences.length ? `I remember: ${c.memory.preferences.at(-1)}. ` : ""}Try follow me, collect oak_log 3, or protect me.`;
   }
 }

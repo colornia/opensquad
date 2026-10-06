@@ -1,70 +1,78 @@
-# OpenSquad v0.1
+# OpenSquad
 
-A Minecraft Java Edition teammate for private and local servers, built with TypeScript and Mineflayer. It follows players, gathers resources, shares inventory items, and guards against nearby hostile mobs. Commands, text chat, and persistent player memories work without an LLM API key.
+在 Minecraft 里，叫上一个 AI 队友。
 
-## Quick start
+[![CI](https://github.com/colornia/opensquad/actions/workflows/ci.yml/badge.svg)](https://github.com/colornia/opensquad/actions/workflows/ci.yml)
+[![MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Install Node.js 22 or newer. From this repository directory:
+简体中文 · [English](README.en.md) · [开始玩](#开始玩) · [使用说明](docs/play.zh-CN.md)
+
+一个人开新档，砍树、下矿、走夜路，总有些时候想叫个人一起。OpenSquad 想做的就是这个队友：进到你的世界里，跟着你走，帮忙收集材料，把东西交给你，遇到附近的怪物时一起应付。你在游戏聊天框里叫它就行，不用切出游戏。
+
+现在是早期版本。它已经能执行明确的协作指令，也会记住你主动告诉它的偏好；自由聊天可以接入大模型，也可以先用不需要密钥的基础模式体验。它还没有语音、自动建房或成熟的生存策略，遇到复杂地形和战斗仍然会犯错。
+
+## 先试一次合作
+
+机器人进服后，站到它附近，在聊天框输入：
+
+```text
+!bot 跟着我
+!bot 收集 橡木 3
+!bot 给我 橡木 3
+!bot 保护我
+!bot 停下
+```
+
+它会跟随你，尝试采集附近的橡木原木，再走到你身边丢给你捡。开启保护后，它会跟着你并追击附近的敌对生物；随时可以叫停。采集范围内要有相应方块，挖矿还需要你先给它合适的镐。想让它记住一起玩时的习惯，可以说 `!bot 记住 我喜欢探索矿洞`，以后用 `!bot 回忆` 查看，用 `!bot 忘记我` 删除自己的记录。
+
+这段是操作示例。自动检查已验证入服、聊天、采集泥土和物品投放，真人玩家在正式 Java 服务器上的完整体验还在验证中。
+
+## 开始玩
+
+准备 Minecraft Java 版、一个本地或私人服务器，以及 [Node.js 22 或更新版本](https://nodejs.org/)。机器人是额外的一名玩家，需要能连接到你的服务器；默认连接本机 `127.0.0.1:25565`。单人存档也可以先“对局域网开放”，然后把游戏显示的端口填进配置。
+
+下载源码后，在项目文件夹打开终端，安装依赖：
 
 ```sh
 npm ci
 ```
 
-Copy `.env.example` to `.env` (`Copy-Item .env.example .env` in PowerShell, or `cp .env.example .env` on macOS/Linux). Set `MC_HOST`, `MC_PORT`, and optionally `MC_VERSION` to your Java server. Start the server first, then:
+复制 `.env.example` 为 `.env`。Windows 可以执行 `Copy-Item .env.example .env`，macOS/Linux 使用 `cp .env.example .env`。打开 `.env`，填入服务器地址和端口；其余先保持默认。不需要配置大模型 API 密钥。
+
+```dotenv
+MC_HOST=127.0.0.1
+MC_PORT=25565
+MC_USERNAME=OpenSquad
+```
+
+先启动服务器，再运行：
 
 ```sh
 npm run dev
 ```
 
-For a compiled run use `npm run build` followed by `npm start`. The bot prints a connection message and announces `Ready! Use !bot help.` in game. No API account or key is required. Run one bot process per memory file.
+看到它在游戏里打招呼后，输入 `!bot 帮助`。如果服务器需要正版账号登录，请改为 `MC_AUTH=microsoft`，并填写机器人账号，首次登录按终端提示操作；该账号需要拥有 Java 版并被服务器允许加入。离线登录只用于隔离的本地测试服。[连接失败时看这里](docs/play.zh-CN.md#连接不上怎么办)。
 
-For the simplest offline test server, use a private Java server with `online-mode=false` and bind it to `127.0.0.1` in `server.properties`. For a server using account authentication, set `MC_AUTH=microsoft` and `MC_USERNAME` to the bot account identifier; follow Mineflayer's first-run Microsoft sign-in instructions in the terminal. The account must have Java Edition access and be permitted by the server whitelist. Offline mode is intended for an isolated local server. A single-player world opened to LAN also works: use its displayed LAN port, which changes between sessions.
+## 可以一起做什么
 
-Use a Java version supported by the installed Mineflayer release, rather than assuming the newest game release is supported. Leave `MC_VERSION` empty to detect the protocol or specify the server version exactly. The included network smoke test uses **1.18.2**. It is a temporary protocol-compatible server, not the official Mojang Java server; real vanilla/Paper gameplay and newer versions still need manual acceptance testing.
+| 你说的话                                 | 队友的动作                                           |
+| ---------------------------------------- | ---------------------------------------------------- |
+| `!bot 跟着我` / `!bot 过来`              | 跟随你，或走到你当前的位置                           |
+| `!bot 收集 泥土 3`                       | 采集附近的资源，告诉你实际拿到了多少                 |
+| `!bot 给我 泥土 3`                       | 把背包里的物品丢到你附近                             |
+| `!bot 保护我` / `!bot 攻击`              | 保护模式会跟随你；攻击模式围绕机器人寻找附近敌对生物 |
+| `!bot 停下`                              | 停止移动、采集和战斗                                 |
+| `!bot 记住 我喜欢探索矿洞` / `!bot 回忆` | 保存偏好，查看近期合作记录                           |
+| `!bot 忘记我`                            | 删除你自己的本地偏好和合作记录                       |
 
-## Playing together
+英文指令也保留了。当前可采集橡木、白桦木、云杉木原木、泥土、沙子、圆石、煤炭、粗铁和钻石；交付可以使用背包里其他物品的英文名称。完整指令和数量限制见[使用说明](docs/play.zh-CN.md)。战斗目前只做到靠近和攻击，没有自动回血、盾牌策略或躲避苦力怕，别把珍贵装备全交给它。
 
-Enter these messages in game. Prefix every command or conversation with `!bot`, or address the bot as `OpenSquad: follow me`. Unaddressed chat is ignored. Set `ALLOWED_PLAYERS=YourName,FriendName` to restrict who can direct the bot; empty permits any player in the private server.
+## 你的记录怎么处理
 
-| Message                                  | Behavior                                                        |
-| ---------------------------------------- | --------------------------------------------------------------- |
-| `!bot follow me`                         | Follow the issuing player at about two blocks distance.         |
-| `!bot stop`                              | Cancel collection/navigation and stop guarding or fighting.     |
-| `!bot come here`                         | Walk to the issuing player's current position.                  |
-| `!bot collect oak_log 3`                 | Gather up to three additional items; default quantity is one.   |
-| `!bot give me oak_log 3`                 | Walk to you and toss up to three inventory items for pickup.    |
-| `!bot protect me`                        | Follow and target nearby hostile mobs around you until stopped. |
-| `!bot attack nearby hostile mobs`        | Target nearby hostile mobs around the bot until stopped.        |
-| `!bot remember I prefer exploring caves` | Persist an explicit player preference.                          |
-| `!bot memory`                            | Show preferences and the last three shared action events.       |
-| `!bot how are you?`                      | Chat with the mock brain or configured LLM.                     |
-| `!bot help`                              | Show commands.                                                  |
+基础模式不调用外部模型。你主动保存的偏好和已完成的合作事件存在本机 `data/memory.json`，不会随源码提交到 GitHub；机器人不录音、不截屏，也不保存普通聊天内容。`忘记我` 会删除当前玩家的本地记录。启用外部模型后，你发给机器人的自由聊天、玩家名和已保存的记忆会发送到你选择的服务；删除本地记录不会替服务商删除已收到的数据。详见[隐私说明](docs/privacy.zh-CN.md)。
 
-The movement commands also accept `跟着我`, `停下`, `过来`, `保护我`, and `攻击`. Use Minecraft registry item names for collection and giving; spaces are converted to underscores. Collection supports `oak_log`, `birch_log`, `spruce_log`, `dirt`, `sand`, `cobblestone`, `coal`, `raw_iron`, and `diamond`. It mines source blocks and picks up drops; it does not craft or smelt. Give accepts any exact inventory item name. Give supplies available items even when fewer than requested, and reports the actual number tossed. Pickup by the intended player is not guaranteed if another entity is beside the drop.
+## 继续开发
 
-Stay within visible, loaded chunks. Give the bot an appropriate pickaxe before requesting ores; missing tools, unreachable paths, unknown resources, and absent players produce chat feedback. Collection searches 32 blocks by default and caps a request at 16 items (configurable). One source block can yield more than one item. Attempts are bounded, so incomplete collection reports the actual quantity. During collection, pathfinding can break only the resource's source block types; it may break those while navigating. Ordinary follow/navigation does not dig. Single finite actions time out after 45 seconds. Follow and guard are ongoing modes until `stop` or another action replaces them. A finite action in progress rejects additional requests except `stop`.
+下一步优先改善一起玩的体验：连接和失败提示、中文交互、动作中断，以及资源采集的稳定性。语音和自主建造留在后续阶段，先让现有动作好用。问题反馈可以直接发到 [Issues](https://github.com/colornia/opensquad/issues)，说明游戏版本、服务器类型和复现步骤，贴日志前请删掉账号、IP 和密钥。
 
-Combat is deliberately basic: a fixed hostile allowlist, bounded range, pursuit, and a 650 ms attack interval. It uses the currently held item (or punches), never deliberately targets players or passive animals, and has no advanced shielding, armor management, healing, creeper avoidance, or guaranteed survival. Some conditionally hostile mobs such as spiders are included; neutral endermen and zombified piglins are excluded. The network smoke checks that combat modes start and stop, not combat success against live mobs.
-
-## Architecture and LLM configuration
-
-`src/brain` contains the provider-neutral `Brain.reply(context, signal)` interface, deterministic `MockBrain`, and an OpenAI-compatible HTTP implementation. To use another provider, implement the interface and select it in `createBrain`. Set `BRAIN_PROVIDER=openai-compatible`, `LLM_BASE_URL`, `LLM_MODEL`, and `LLM_API_KEY` to enable the bundled HTTP provider. Requests time out after ten seconds and fall back to mock replies on missing keys, transport failures, or invalid responses. A configured external provider receives addressed conversational text, the player name, and that player's saved preferences/events. Deterministic action commands do not call the LLM.
-
-`src/planner/router.ts` parses explicit intents; `controller.ts` handles scheduling, interruption, results and memory. `src/skills` defines the game action contract. `src/minecraft/adapter.ts` implements it with Mineflayer, Pathfinder and CollectBlock. `src/memory/store.ts` stores at most 20 preferences and 50 timestamped action events per player in `data/memory.json`, with atomic file replacement. Memories survive restarts. Invalid memory files fail startup rather than silently overwriting saved data. Delete that file to reset memories. No hidden game actions are inferred from model output.
-
-Configuration is in `.env.example` with defaults in `src/config.ts`. Numeric settings are range-validated. The bot exits on disconnect; restart it after correcting a port/version/authentication problem. There is no automatic reconnect loop.
-
-## Verification
-
-```sh
-npm run check
-npm run smoke
-```
-
-`check` compiles strict TypeScript and runs tests for deterministic routing, prefix boundaries, persisted/bounded memory, action failure feedback and interruption. `smoke` starts an ephemeral localhost Flying Squid server and two real Mineflayer clients, then checks inbound player chat, outbound bot responses, follow/stop/come/guard/attack routing, actual dirt collection into inventory, item tossing, and memory reload. It requires no Java installation, external server, credentials, or LLM API. The fixture explicitly sends surrounding chunks to make loading deterministic and shuts down afterward. Flying Squid is a development-only dependency.
-
-For manual acceptance on your Java server: connect the bot and your player in survival mode, issue follow while walking, stop, come, collect logs, give the logs back, then test protection against a nearby zombie. Restart the bot and verify `!bot memory`. Also test a missing pickaxe, unreachable resource, and stopping during collection. External LLM calls are not covered by the local network smoke.
-
-Mineflayer's authentication dependencies currently include moderate-severity advisories. Run `npm audit` to review the findings for your installed dependency versions. This release is intended for private and local servers.
-
-Upstream API references: [Mineflayer](https://github.com/PrismarineJS/mineflayer), [Pathfinder](https://github.com/PrismarineJS/mineflayer-pathfinder), and [CollectBlock](https://github.com/PrismarineJS/mineflayer-collectblock).
+项目采用 MIT 许可证，使用 Mineflayer 连接游戏。开发接口、模型配置和测试方法见[开发说明](docs/development.en.md)；想了解其他方向，可以看[同类项目与设计取舍](docs/related-projects.zh-CN.md)。

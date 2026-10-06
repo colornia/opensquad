@@ -3,3 +3,10 @@ dist/
 .env
 data/
 *.log
+.env.*
+!.env.example
+nmp-cache/
+.minecraft/
+auth-cache/
+*.pem
+*.key
