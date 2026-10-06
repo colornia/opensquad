@@ -58,6 +58,8 @@ Combat is deliberately basic: a fixed hostile allowlist, bounded range, pursuit,
 
 ## Architecture and LLM configuration
 
+`src/skills/items.ts` shares Chinese chat aliases and inventory/result display names. Handoff accepts common tools, food and supplies through these aliases, while collection remains limited to the adapter's explicit source mapping. Tests check aliases against the 1.18.2 item registry. The protocol smoke seeds a pickaxe through the server inventory and verifies its Chinese inventory query and real toss path, as well as missing-tool feedback and unsupported collection. It does not simulate a player dropping that tool for pickup.
+
 Death and disconnect call `Controller.invalidate()`, canceling active work and clearing the selected mode. Each request captures a session counter; feedback from an invalidated session is discarded, including delayed stop acknowledgments and cancellation errors. Finite actions retain their cleanup lock until settled, and aborted results are not persisted. Chat cancellation releases the lock without waiting for an uncooperative provider. Controller tests cover delayed actions and model replies across invalidation; they do not simulate a full vanilla death/respawn cycle.
 
 `src/minecraft/visibility.ts` checks loaded cells along the line from the bot's head to the target's torso and raycasts against block collision shapes before attacking. Blocked attempts do not consume cooldown. This is a conservative hit check, not a planner for navigating around obstacles or finding exposed body parts. The protocol smoke builds a solid wall, verifies no attacks, then removes it and checks damage.

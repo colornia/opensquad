@@ -1,3 +1,5 @@
+import { itemAliases } from "../skills/items";
+
 export type Intent =
   | {
       kind:
@@ -15,23 +17,9 @@ export type Intent =
   | { kind: "collect" | "give"; item: string; count: number }
   | { kind: "remember"; preference: string }
   | { kind: "chat"; text: string };
-const resourceAliases: Record<string, string> = {
-  橡木: "oak_log",
-  橡木原木: "oak_log",
-  白桦木: "birch_log",
-  白桦木原木: "birch_log",
-  云杉木: "spruce_log",
-  云杉木原木: "spruce_log",
-  泥土: "dirt",
-  沙子: "sand",
-  圆石: "cobblestone",
-  煤炭: "coal",
-  粗铁: "raw_iron",
-  钻石: "diamond",
-};
-const compactResource = new RegExp(
+const compactItem = new RegExp(
   `^(?:帮我)?(收集|采集|给我)\\s*(?:(-?\\d+)\\s*个?\\s*)?(${Object.keys(
-    resourceAliases,
+    itemAliases,
   )
     .sort((a, b) => b.length - a.length)
     .join("|")})\\s*(?:(-?\\d+)\\s*个?)?$`,
@@ -68,7 +56,7 @@ export function route(text: string): Intent {
   const remember = s.match(/^(?:remember|记住)\s+(.+)$/i);
   if (remember)
     return { kind: "remember", preference: remember[1].slice(0, 200) };
-  const compact = s.match(compactResource);
+  const compact = s.match(compactItem);
   if (compact) {
     if (compact[2] && compact[4])
       return {
@@ -77,7 +65,7 @@ export function route(text: string): Intent {
       };
     return resourceIntent(
       compact[1] === "给我" ? "give" : "collect",
-      resourceAliases[compact[3]],
+      itemAliases[compact[3]],
       compact[2] ?? compact[4],
       true,
     );
@@ -88,8 +76,8 @@ export function route(text: string): Intent {
   if (chinese) {
     return resourceIntent(
       chinese[1] === "给我" ? "give" : "collect",
-      Object.hasOwn(resourceAliases, chinese[2])
-        ? resourceAliases[chinese[2]]
+      Object.hasOwn(itemAliases, chinese[2])
+        ? itemAliases[chinese[2]]
         : chinese[2].toLowerCase(),
       chinese[3],
       true,

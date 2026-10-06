@@ -1,21 +1,9 @@
+import { chineseItemName } from "../skills/items";
+export { chineseItemName } from "../skills/items";
+
 export function isChinese(text: string) {
   return /[\u3400-\u9fff]/u.test(text);
 }
-export function chineseItemName(item: string) {
-  const names: Record<string, string> = {
-    oak_log: "橡木原木",
-    birch_log: "白桦木原木",
-    spruce_log: "云杉木原木",
-    dirt: "泥土",
-    sand: "沙子",
-    cobblestone: "圆石",
-    coal: "煤炭",
-    raw_iron: "粗铁",
-    diamond: "钻石",
-  };
-  return Object.hasOwn(names, item) ? names[item] : item;
-}
-
 // Translate deterministic skill results; model-generated conversation keeps its own language.
 export function chineseReply(text: string): string {
   const fixed: Record<string, string> = {
@@ -44,11 +32,21 @@ export function chineseReply(text: string): string {
       "我缺少能采集这个资源的工具，先把合适的镐丢给我。",
     "There are no defined chest locations!":
       "背包可能已经满了。先让我把一些物品给你，再继续采集。",
+    "Block not in view": "暂时看不到要挖的方块。走近资源、等区块加载后再试。",
+    "Digging aborted": "挖掘中断了，确认资源还在附近后可以重新叫我采集。",
+    "The goal was changed before it could be completed!":
+      "路线已经改变，这次没走到目标。等我停稳后重新发指令吧。",
+    "Path was stopped before it could be completed! Thus, the desired goal was not reached.":
+      "移动中断了，这次还没走到目标。等我停稳后再试。",
     "Collect supports oak_log, birch_log, spruce_log, dirt, sand, cobblestone, coal, raw_iron, diamond.":
       "现在能收集橡木、白桦木、云杉木、泥土、沙子、圆石、煤炭、粗铁和钻石。",
   };
   if (Object.hasOwn(fixed, text)) return fixed[text];
   const patterns: [RegExp, (...parts: string[]) => string][] = [
+    [
+      /^Server (?:didn't respond to|rejected) transaction for clicking on slot \d+ on window with id \d+\.$/,
+      () => "服务器没有确认这次物品操作。先查看背包，确认实际数量后再试。",
+    ],
     [/^Following (.+)\.$/, (name) => `跟上了，${name}。`],
     [/^I'm here, (.+)\.$/, (name) => `到了，${name}。`],
     [

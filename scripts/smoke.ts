@@ -306,6 +306,25 @@ async function main() {
     );
     await command("背包", "泥土 ×1");
     await command("给我1个泥土", "把 1 个 泥土 放在 Alex 身边了");
+    await command("给我石镐", "我背包里还没有 石镐");
+    await command("收集石镐", "现在能收集橡木");
+    // Seed one tool through the server inventory, then exercise the real chat and toss path.
+    const Item = require("prismarine-item")(server.registry);
+    botPlayer.inventory.updateSlot(
+      10,
+      new Item(server.registry.itemsByName.stone_pickaxe.id, 1),
+    );
+    await waitFor(
+      () =>
+        adapter!.bot.inventory.items().some((i) => i.name === "stone_pickaxe"),
+      "seeded tool reaches the bot through inventory packets",
+    );
+    await command("背包", "石镐 ×1");
+    await command("给我石镐", "把 1 个 石镐 放在 Alex 身边了");
+    assert.ok(
+      !adapter.bot.inventory.items().some((i) => i.name === "stone_pickaxe"),
+      "Chinese tool handoff removes the carried pickaxe",
+    );
     await command("收集3个橡木2个", "数量只写一次");
     await server.setBlock(
       server.overworld,
