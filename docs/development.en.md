@@ -72,6 +72,8 @@ Configuration is in `.env.example` with defaults in `src/config.ts`. Numeric set
 
 ## Verification
 
+The combat portion uses stationary protocol-server mobs and temporarily disables the teammate client's movement physics to isolate attack delivery and target selection. Health changes use the server's normal damage handler. The fixture explicitly synchronizes the chat player's teleport position; movement physics is restored for collection and handoff. These checks do not establish pursuit or survival performance against autonomous mobs.
+
 ```sh
 npm run check
 npm run smoke

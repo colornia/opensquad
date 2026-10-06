@@ -78,10 +78,37 @@ async function main() {
       username: "Alex",
     });
     alex.on("error", console.error);
+    // This chat-only player is positioned by the server; prevent stale client movement after teleport.
+    alex.physicsEnabled = false;
     await once(alex, "spawn");
-    await server.players
-      .find((p: any) => p.username === "Alex")
-      .teleport(adapter.bot.entity.position.offset(1, 0, 0));
+    const placePlayer = async () => {
+      const player = server.players.find((p: any) => p.username === "Alex");
+      const position = adapter!.bot.entity.position.offset(1, 0, 0);
+      await player.teleport(position);
+      // The fixture's nearby broadcast can miss an observer during initial visibility updates.
+      botPlayer._client.write("entity_teleport", {
+        entityId: player.id,
+        x: position.x,
+        y: position.y,
+        z: position.z,
+        yaw: 0,
+        pitch: 0,
+        onGround: true,
+      });
+      const deadline = Date.now() + 5000;
+      while (
+        (adapter!.bot.players.Alex?.entity?.position.distanceTo(position) ??
+          Infinity) > 0.1 &&
+        Date.now() < deadline
+      )
+        await new Promise((r) => setTimeout(r, 50));
+      assert.ok(
+        (adapter!.bot.players.Alex?.entity?.position.distanceTo(position) ??
+          Infinity) <= 0.1,
+        "player teleport observed at the correct position",
+      );
+    };
+    await placePlayer();
     const visibleDeadline = Date.now() + 5000;
     while (!adapter.bot.players.Alex?.entity && Date.now() < visibleDeadline)
       await new Promise((r) => setTimeout(r, 50));
@@ -110,12 +137,22 @@ async function main() {
     await command("状态", "跟随 Alex");
     await command("stop", "Stopped.");
     await command("come here", "I'm here, Alex.");
+    // Combat acceptance uses stationary participants; movement is checked separately below.
+    adapter.bot.physicsEnabled = false;
+    await placePlayer();
     await command("protect me", "Protecting Alex");
-    const waitFor = async (check: () => boolean, message: string) => {
+    const waitFor = async (
+      check: () => boolean,
+      message: string,
+      details?: () => unknown,
+    ) => {
       const deadline = Date.now() + 5000;
       while (!check() && Date.now() < deadline)
         await new Promise((r) => setTimeout(r, 50));
-      assert.ok(check(), message);
+      assert.ok(
+        check(),
+        `${message}${details ? `: ${JSON.stringify(details())}` : ""}`,
+      );
     };
     const attacks: number[] = [];
     botPlayer._client.on(
@@ -128,11 +165,17 @@ async function main() {
       const type = server.registry.entitiesByName[name];
       // Flying Squid's helper uses a legacy mob table; supply the current protocol entry.
       server.registry.mobs[type.id] ??= type;
-      return server.spawnMob(
+      const mob = server.spawnMob(
         type.id,
         server.overworld,
         adapter!.bot.entity.position.offset(1, 0, 1),
       );
+      // This fixture checks protocol hits, not mob locomotion. Keep the initial target in reach.
+      mob.calculatePhysics = async () => ({
+        position: mob.position,
+        onGround: true,
+      });
+      return mob;
     };
     const cow = spawnMob("cow");
     await waitFor(
@@ -147,8 +190,28 @@ async function main() {
     );
     const zombie = spawnMob("zombie");
     await waitFor(
+      () => !!adapter!.bot.entities[zombie.id],
+      "zombie visible through protocol",
+    );
+    assert.equal(adapter.bot.entities[zombie.id].name, "zombie");
+    await waitFor(
       () => attacks.includes(zombie.id) && zombie.health < 20,
       "protection sends an attack and damages the nearby zombie",
+      () => ({
+        attacks,
+        health: zombie.health,
+        name: adapter!.bot.entities[zombie.id]?.name,
+        distance: adapter!.bot.entities[zombie.id]?.position.distanceTo(
+          adapter!.bot.entity.position,
+        ),
+        serverPosition: zombie.position,
+        botPosition: adapter!.bot.entity.position,
+        clientZombie: adapter!.bot.entities[zombie.id]?.position,
+        playerPosition: adapter!.bot.players.Alex?.entity?.position,
+        goal: (
+          adapter!.bot.pathfinder.goal as { entity?: { name?: string } } | null
+        )?.entity?.name,
+      }),
     );
     zombie.destroy();
     await waitFor(
@@ -173,6 +236,13 @@ async function main() {
     await waitFor(
       () => attacks.includes(waitingZombie.id) && waitingZombie.health < 20,
       "attack mode damages the nearby zombie",
+      () => ({
+        attacks,
+        health: waitingZombie.health,
+        distance: adapter!.bot.entities[waitingZombie.id]?.position.distanceTo(
+          adapter!.bot.entity.position,
+        ),
+      }),
     );
     await command("stop", "Stopped.");
     assert.ok(
@@ -181,6 +251,7 @@ async function main() {
     );
     waitingZombie.destroy();
     cow.destroy();
+    adapter.bot.physicsEnabled = true;
     console.log(
       "PASS: protection and attack packets damage zombies; passive mobs stay untouched; stop halts combat; protection returns to following.",
     );
@@ -242,11 +313,10 @@ async function main() {
       username: "Alex",
     });
     alex.on("error", console.error);
+    alex.physicsEnabled = false;
     alex.on("messagestr", (message) => received.push(message));
     await once(alex, "spawn");
-    await server.players
-      .find((p: any) => p.username === "Alex")
-      .teleport(adapter.bot.entity.position.offset(1, 0, 0));
+    await placePlayer();
     const returnDeadline = Date.now() + 5000;
     while (!adapter.bot.players.Alex?.entity && Date.now() < returnDeadline)
       await new Promise((r) => setTimeout(r, 50));
