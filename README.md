@@ -37,7 +37,7 @@
 npm ci
 ```
 
-复制 `.env.example` 为 `.env`。Windows 可以执行 `Copy-Item .env.example .env`，macOS/Linux 使用 `cp .env.example .env`。打开 `.env`，填入服务器地址和端口；其余先保持默认。不需要配置大模型 API 密钥。
+运行 `npm run setup`，按中文提示填入服务器地址、端口和登录方式，它会创建 `.env`，不需要模型密钥。已有配置会保留，不会覆盖。如果想手动设置，也可以复制 `.env.example` 为 `.env`，然后编辑：
 
 ```dotenv
 MC_HOST=127.0.0.1
@@ -45,7 +45,7 @@ MC_PORT=25565
 MC_USERNAME=OpenSquad
 ```
 
-先启动服务器，再运行：
+先启动服务器，用 `npm run doctor` 检查端口是否能连接，再运行：
 
 ```sh
 npm run dev

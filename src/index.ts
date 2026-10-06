@@ -4,6 +4,7 @@ import { createBrain } from "./brain";
 import { MemoryStore } from "./memory/store";
 import { Controller } from "./planner/controller";
 import { addressed } from "./planner/router";
+import { connectionHint } from "./setup/diagnostics";
 const config = loadConfig();
 const memory = new MemoryStore(config.memoryPath);
 const adapter = new MinecraftAdapter(config);
@@ -40,7 +41,12 @@ adapter.bot.on("chat", (player, message) => {
 });
 adapter.bot.on("kicked", (reason) => console.error("Kicked:", reason));
 adapter.bot.on("error", (error) =>
-  console.error("Connection error:", error.message),
+  console.error(
+    "连接出了问题：",
+    connectionHint(error),
+    "\n详细错误：",
+    error.message,
+  ),
 );
 adapter.bot.on("end", () => {
   ready = false;

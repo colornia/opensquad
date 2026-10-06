@@ -10,7 +10,7 @@ This is an early release. Movement, chat, dirt collection, and item tossing have
 
 ## Get started
 
-Install Node.js 22 or newer and start a private/local Minecraft Java server. From the project folder, run `npm ci`, copy `.env.example` to `.env`, and set `MC_HOST` and `MC_PORT`. Start the bot with `npm run dev`. For authenticated servers use `MC_AUTH=microsoft` and follow the terminal sign-in instructions with a Java-enabled account. Offline authentication is for an isolated local test server.
+Install Node.js 22 or newer and start a private/local Minecraft Java server. From the project folder, run `npm ci`, then `npm run setup` for the Chinese setup prompts, or copy `.env.example` to `.env` and set `MC_HOST` and `MC_PORT` manually. Existing configuration is never overwritten. `npm run doctor` checks network reachability; it does not verify game version or login permissions. Start the bot with `npm run dev`. For authenticated servers use `MC_AUTH=microsoft` and follow the terminal sign-in instructions with a Java-enabled account. Offline authentication is for an isolated local test server.
 
 ```text
 !bot follow me

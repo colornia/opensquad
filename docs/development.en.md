@@ -2,6 +2,8 @@
 
 [中文首页](../README.md) · [English overview](../README.en.md)
 
+`npm run setup` creates a `.env` interactively with Chinese prompts; `--defaults` creates a localhost config non-interactively. Both preserve existing files. `npm run doctor` validates configuration and probes the TCP port without logging in or displaying API keys. It cannot establish Minecraft version/authentication compatibility.
+
 Chinese collection and give commands accept resource aliases, such as `!bot 收集 橡木 3` and `!bot 给我 泥土 2`. Deterministic replies follow the command language. `!bot forget me` / `!bot 忘记我` deletes only the issuing player's local record; it does not delete server logs or data already sent to a model provider. Run `npm run privacy:check -- --history` to scan source and Git history for known credential patterns and personal paths. Pattern checks do not prove the absence of every possible secret.
 
 A Minecraft Java Edition teammate for private and local servers, built with TypeScript and Mineflayer. It follows players, gathers resources, shares inventory items, and guards against nearby hostile mobs. Commands, text chat, and persistent player memories work without an LLM API key.
