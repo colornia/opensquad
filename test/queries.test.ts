@@ -58,6 +58,11 @@ test("inventory and status queries do not interrupt modes, call the brain or wri
     assert.match(messages.at(-1)!, /跟随 Alex/);
     await controller.handle("Alex", "背包");
     assert.match(messages.at(-1)!, /泥土 ×3.*橡木原木 ×2/);
+    await controller.handle("Alex", "帮助");
+    assert.match(messages.at(-1)!, /停下.*背包/);
+    await controller.handle("Alex", "回忆");
+    assert.match(messages.at(-1)!, /跟上了，Alex/);
+    assert.ok(!messages.at(-1)!.includes("。。"));
     assert.equal(stops, previous);
     assert.equal(brainCalls, 0);
     assert.equal(memory.get("Alex").events.length, 1);

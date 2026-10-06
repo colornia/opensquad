@@ -58,6 +58,47 @@ function fixture(overrides: Partial<Skills>, timeout = 20) {
     dispose: () => rmSync(dir, { recursive: true, force: true }),
   };
 }
+test("help and memory remain available during collection and stop cleanup", async () => {
+  const started = deferred<void>(),
+    unwind = deferred<void>();
+  const f = fixture(
+    {
+      async collect(_item, _count, signal) {
+        started.resolve();
+        await unwind.promise;
+        signal.throwIfAborted();
+        return "collected";
+      },
+    },
+    10000,
+  );
+  try {
+    f.memory.remember("Alex", "likes mining");
+    f.memory.remember("Steve", "private preference for Steve");
+    const before = f.memory.get("Alex");
+    const job = f.controller.handle("Alex", "collect dirt");
+    await started.promise;
+    await f.controller.handle("Alex", "帮助");
+    assert.match(f.messages.at(-1)!, /停下.*背包/);
+    await f.controller.handle("Alex", "memory");
+    assert.match(f.messages.at(-1)!, /likes mining/);
+    assert.ok(!f.messages.at(-1)!.includes("Steve"));
+    assert.equal(f.calls.filter((call) => call === "stop").length, 1);
+    const stop = f.controller.handle("Alex", "stop");
+    await tick();
+    await f.controller.handle("Alex", "help");
+    assert.match(f.messages.at(-1)!, /follow me/);
+    await f.controller.handle("Alex", "回忆");
+    assert.match(f.messages.at(-1)!, /likes mining/);
+    assert.deepEqual(f.memory.get("Alex"), before);
+    unwind.resolve();
+    await Promise.all([job, stop]);
+  } finally {
+    unwind.resolve();
+    f.dispose();
+  }
+});
+
 test("timeout keeps the adapter reserved until a late action finishes cleanup", async () => {
   const cleanup = deferred<void>();
   const started = deferred<void>();

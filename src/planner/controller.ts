@@ -80,6 +80,33 @@ export class Controller {
       this.say(intent.message);
       return;
     }
+    if (intent.kind === "help") {
+      say(
+        zh
+          ? "跟着我 | 停下 | 过来 | 收集 橡木 3 | 给我 橡木 3 | 保护我 | 攻击 | 状态 | 背包 | 记住 <偏好> | 回忆 | 忘记我"
+          : "follow me | stop | come here | collect oak_log 3 | give me oak_log 3 | protect me | attack nearby hostile mobs | status | inventory | remember <preference> | memory | forget me",
+      );
+      return;
+    }
+    if (intent.kind === "recall") {
+      const m = this.memory.get(player);
+      this.say(
+        zh
+          ? `记住的偏好：${m.preferences.join("；") || "还没有"}。最近一起做的事：${
+              m.events
+                .slice(-3)
+                .map((e) => chineseReply(e.text).replace(/[.。]+$/, ""))
+                .join("；") || "还没有"
+            }。`
+          : `Preferences: ${m.preferences.join("; ") || "none"}. Recent events: ${
+              m.events
+                .slice(-3)
+                .map((e) => e.text.replace(/[.。]+$/, ""))
+                .join("; ") || "none"
+            }.`,
+      );
+      return;
+    }
     if (intent.kind === "status") {
       this.say(this.status(zh));
       return;
@@ -144,14 +171,6 @@ export class Controller {
     let work: Promise<string> | undefined;
     let timedOut = false;
     try {
-      if (intent.kind === "help") {
-        say(
-          zh
-            ? "跟着我 | 停下 | 过来 | 收集 橡木 3 | 给我 橡木 3 | 保护我 | 攻击 | 状态 | 背包 | 记住 <偏好> | 回忆 | 忘记我"
-            : "follow me | stop | come here | collect oak_log 3 | give me oak_log 3 | protect me | attack nearby hostile mobs | status | inventory | remember <preference> | memory | forget me",
-        );
-        return;
-      }
       if (intent.kind === "remember") {
         this.memory.remember(player, intent.preference);
         say("I will remember that.");
@@ -163,25 +182,6 @@ export class Controller {
           zh
             ? "已经删除你的本地偏好和合作记录。"
             : "Your local preferences and shared events have been deleted.",
-        );
-        return;
-      }
-      if (intent.kind === "recall") {
-        const m = this.memory.get(player);
-        this.say(
-          zh
-            ? `记住的偏好：${m.preferences.join("；") || "还没有"}。最近一起做的事：${
-                m.events
-                  .slice(-3)
-                  .map((e) => chineseReply(e.text))
-                  .join("；") || "还没有"
-              }。`
-            : `Preferences: ${m.preferences.join("; ") || "none"}. Recent events: ${
-                m.events
-                  .slice(-3)
-                  .map((e) => e.text)
-                  .join("; ") || "none"
-              }.`,
         );
         return;
       }
