@@ -111,12 +111,79 @@ async function main() {
     await command("stop", "Stopped.");
     await command("come here", "I'm here, Alex.");
     await command("protect me", "Protecting Alex");
+    const waitFor = async (check: () => boolean, message: string) => {
+      const deadline = Date.now() + 5000;
+      while (!check() && Date.now() < deadline)
+        await new Promise((r) => setTimeout(r, 50));
+      assert.ok(check(), message);
+    };
+    const attacks: number[] = [];
+    botPlayer._client.on(
+      "use_entity",
+      (packet: { mouse: number; target: number }) => {
+        if (packet.mouse === 1) attacks.push(packet.target);
+      },
+    );
+    const spawnMob = (name: string) => {
+      const type = server.registry.entitiesByName[name];
+      // Flying Squid's helper uses a legacy mob table; supply the current protocol entry.
+      server.registry.mobs[type.id] ??= type;
+      return server.spawnMob(
+        type.id,
+        server.overworld,
+        adapter!.bot.entity.position.offset(1, 0, 1),
+      );
+    };
+    const cow = spawnMob("cow");
+    await waitFor(
+      () => !!adapter!.bot.entities[cow.id],
+      "passive mob visible through protocol",
+    );
+    await new Promise((r) => setTimeout(r, 800));
+    assert.equal(
+      attacks.length,
+      0,
+      "protection does not attack the cow or player",
+    );
+    const zombie = spawnMob("zombie");
+    await waitFor(
+      () => attacks.includes(zombie.id) && zombie.health < 20,
+      "protection sends an attack and damages the nearby zombie",
+    );
+    zombie.destroy();
+    await waitFor(
+      () =>
+        (adapter!.bot.pathfinder.goal as { entity?: unknown } | null)
+          ?.entity === adapter!.bot.players.Alex?.entity,
+      "protection returns to following after the hostile disappears",
+    );
     await command("stop", "Stopped.");
+    const afterStop = attacks.length;
+    const waitingZombie = spawnMob("zombie");
+    await waitFor(
+      () => !!adapter!.bot.entities[waitingZombie.id],
+      "second hostile visible",
+    );
+    await new Promise((r) => setTimeout(r, 800));
+    assert.equal(attacks.length, afterStop, "stop prevents further combat");
     await command(
       "attack nearby hostile mobs",
       "Attacking nearby hostile mobs.",
     );
+    await waitFor(
+      () => attacks.includes(waitingZombie.id) && waitingZombie.health < 20,
+      "attack mode damages the nearby zombie",
+    );
     await command("stop", "Stopped.");
+    assert.ok(
+      attacks.every((id) => id === zombie.id || id === waitingZombie.id),
+      "only hostile entities were attacked",
+    );
+    waitingZombie.destroy();
+    cow.destroy();
+    console.log(
+      "PASS: protection and attack packets damage zombies; passive mobs stay untouched; stop halts combat; protection returns to following.",
+    );
     await server.setBlock(
       server.overworld,
       adapter.bot.entity.position.floored().offset(2, 0, 0),

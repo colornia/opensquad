@@ -6,7 +6,7 @@ A teammate for your Minecraft world.
 
 OpenSquad joins your private Minecraft Java server as another player. Ask it to follow you, gather nearby materials, share inventory items, or guard against nearby hostile mobs through in-game text chat. Basic commands and saved preferences work without an LLM API key. An optional model provider adds free-form conversation.
 
-This is an early release. Movement, chat, dirt collection, and item tossing have been checked against a local protocol server. Full gameplay on vanilla/Paper servers and combat against live mobs still need manual testing. There is no voice chat, autonomous building, healing, or advanced combat strategy yet.
+This is an early release. A local protocol server verifies movement, chat, dirt collection, item tossing, zombie damage, stopping combat, and returning to follow. Full gameplay and combat against autonomous mobs on vanilla/Paper servers still need manual testing. There is no voice chat, autonomous building, healing, or advanced combat strategy yet.
 
 ## Get started
 
