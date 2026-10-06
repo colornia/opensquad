@@ -3,6 +3,7 @@ import { pathfinder, Movements, goals } from "mineflayer-pathfinder";
 import { plugin as collectBlock } from "mineflayer-collectblock";
 import type { Config } from "../config";
 import type { Skills } from "../skills";
+import { CompanionNavigation, type CompanionMode } from "./companion";
 const HOSTILES = new Set([
   "zombie",
   "husk",
@@ -31,7 +32,7 @@ const HOSTILES = new Set([
 ]);
 export class MinecraftAdapter implements Skills {
   readonly bot: Bot;
-  private combatTimer?: NodeJS.Timeout;
+  private companionTimer?: NodeJS.Timeout;
   constructor(private config: Config) {
     this.bot = mineflayer.createBot({
       host: config.host,
@@ -52,7 +53,7 @@ export class MinecraftAdapter implements Skills {
       this.bot.collectBlock.movements = movement;
     });
     this.bot.on("end", () => {
-      if (this.combatTimer) clearInterval(this.combatTimer);
+      if (this.companionTimer) clearInterval(this.companionTimer);
     });
     this.bot.on("death", () => {
       void this.stop().catch(() => {});
@@ -76,18 +77,16 @@ export class MinecraftAdapter implements Skills {
     return entity;
   }
   async stop() {
-    if (this.combatTimer) clearInterval(this.combatTimer);
-    this.combatTimer = undefined;
+    if (this.companionTimer) clearInterval(this.companionTimer);
+    this.companionTimer = undefined;
     this.bot.pathfinder.setGoal(null);
     this.bot.clearControlStates();
     this.bot.stopDigging();
     await this.bot.collectBlock.cancelTask();
   }
   async follow(name: string) {
-    this.bot.pathfinder.setGoal(
-      new goals.GoalFollow(this.player(name), 2),
-      true,
-    );
+    this.player(name);
+    this.companion("follow", name);
     return `Following ${name}.`;
   }
   async come(name: string) {
@@ -181,60 +180,26 @@ export class MinecraftAdapter implements Skills {
   }
   async protect(name: string) {
     this.player(name);
-    this.combat(name);
+    this.companion("protect", name);
     return `Protecting ${name} from nearby hostile mobs. Say stop to finish.`;
   }
   async attack() {
-    this.combat();
+    this.companion("attack");
     return "Attacking nearby hostile mobs. Say stop to finish.";
   }
-  private combat(player?: string) {
-    let busy = false;
-    let lastAttack = 0;
-    this.combatTimer = setInterval(() => {
-      if (busy || !this.bot.entity) return;
-      busy = true;
-      void (async () => {
-        const center = player
-          ? this.bot.players[player]?.entity
-          : this.bot.entity;
-        if (!center) {
-          this.bot.pathfinder.setGoal(null);
-          return;
-        }
-        const target = Object.values(this.bot.entities)
-          .filter(
-            (e) =>
-              HOSTILES.has(e.name ?? "") &&
-              e.position.distanceTo(center.position) <=
-                this.config.hostileRadius &&
-              e.position.distanceTo(this.bot.entity.position) <=
-                this.config.hostileRadius * 2,
-          )
-          .sort(
-            (a, b) =>
-              a.position.distanceTo(center.position) -
-              b.position.distanceTo(center.position),
-          )[0];
-        if (target) {
-          this.bot.pathfinder.setGoal(new goals.GoalFollow(target, 2), true);
-          if (
-            target.position.distanceTo(this.bot.entity.position) < 3 &&
-            Date.now() - lastAttack >= 650
-          ) {
-            lastAttack = Date.now();
-            this.bot.attack(target);
-          }
-        } else
-          this.bot.pathfinder.setGoal(
-            player ? new goals.GoalFollow(center, 2) : null,
-            !!player,
-          );
-      })()
-        .catch(() => {})
-        .finally(() => {
-          busy = false;
-        });
+  private companion(mode: CompanionMode, player?: string) {
+    if (this.companionTimer) clearInterval(this.companionTimer);
+    const navigation = new CompanionNavigation(
+      this.bot,
+      this.config.hostileRadius,
+    );
+    navigation.update(mode, HOSTILES, player);
+    this.companionTimer = setInterval(() => {
+      try {
+        navigation.update(mode, HOSTILES, player);
+      } catch {
+        // Entity visibility and connection state may change between ticks.
+      }
     }, 250);
   }
 }

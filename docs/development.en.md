@@ -60,6 +60,8 @@ Combat is deliberately basic: a fixed hostile allowlist, bounded range, pursuit,
 
 ## Architecture and LLM configuration
 
+`src/minecraft/companion.ts` maintains follow/protection/attack targets. It retains a dynamic pathfinding goal while the same entity is selected, pauses when the player is not visible, and follows the replacement entity when that player returns. Protection returns to following after a hostile disappears. This does not provide teleportation, cross-dimension travel, or guaranteed pathfinding success.
+
 Status and inventory queries bypass the action lock, do not call the brain, and do not create memory events. Status describes the current request or selected ongoing mode rather than confirming position or continuous movement. The optional `Skills.inventory()` getter returns aggregated `{ name, count }` entries; adapters without it report that inventory queries are unavailable. Collection with zero new items fails without creating a successful event.
 
 `src/brain` contains the provider-neutral `Brain.reply(context, signal)` interface, deterministic `MockBrain`, and an OpenAI-compatible HTTP implementation. To use another provider, implement the interface and select it in `createBrain`. Set `BRAIN_PROVIDER=openai-compatible`, `LLM_BASE_URL`, `LLM_MODEL`, and `LLM_API_KEY` to enable the bundled HTTP provider. Requests time out after ten seconds and fall back to mock replies on missing keys, transport failures, or invalid responses. A configured external provider receives addressed conversational text, the player name, and that player's saved preferences/events. Deterministic action commands do not call the LLM.

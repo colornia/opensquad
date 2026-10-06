@@ -156,6 +156,43 @@ async function main() {
       ["likes mining"],
     );
     await command("跟着我", "跟上了，Alex。");
+    alex.quit();
+    const leaveDeadline = Date.now() + 5000;
+    while (adapter.bot.players.Alex?.entity && Date.now() < leaveDeadline)
+      await new Promise((r) => setTimeout(r, 50));
+    assert.ok(!adapter.bot.players.Alex?.entity, "player left visibility");
+    await new Promise((r) => setTimeout(r, 300));
+    assert.equal(
+      adapter.bot.pathfinder.goal,
+      null,
+      "follow paused after player left",
+    );
+    alex = mineflayer.createBot({
+      host: "127.0.0.1",
+      port: server.listeningPort,
+      auth: "offline",
+      version: "1.18.2",
+      username: "Alex",
+    });
+    alex.on("error", console.error);
+    alex.on("messagestr", (message) => received.push(message));
+    await once(alex, "spawn");
+    await server.players
+      .find((p: any) => p.username === "Alex")
+      .teleport(adapter.bot.entity.position.offset(1, 0, 0));
+    const returnDeadline = Date.now() + 5000;
+    while (!adapter.bot.players.Alex?.entity && Date.now() < returnDeadline)
+      await new Promise((r) => setTimeout(r, 50));
+    assert.ok(
+      adapter.bot.players.Alex?.entity,
+      "player visible after rejoining",
+    );
+    await new Promise((r) => setTimeout(r, 300));
+    assert.equal(
+      (adapter.bot.pathfinder.goal as { entity?: unknown } | null)?.entity,
+      adapter.bot.players.Alex.entity,
+      "follow resumed with the new player entity without another command",
+    );
     await command("停下", "好，停下了。");
     await command("记住 我喜欢探索矿洞", "记住了");
     await command("回忆", "我喜欢探索矿洞");
