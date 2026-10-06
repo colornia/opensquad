@@ -5,7 +5,7 @@
 [![CI](https://github.com/colornia/opensquad/actions/workflows/ci.yml/badge.svg)](https://github.com/colornia/opensquad/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-简体中文 · [English](README.en.md) · [开始玩](#开始玩) · [使用说明](docs/play.zh-CN.md)
+简体中文 · [English](README.en.md) · [下载源码](https://github.com/colornia/opensquad/releases/latest) · [开始玩](#开始玩) · [使用说明](docs/play.zh-CN.md)
 
 一个人开新档，砍树、下矿、走夜路，总有些时候想叫个人一起。OpenSquad 想做的就是这个队友：进到你的世界里，跟着你走，帮忙收集材料，把东西交给你，遇到附近的怪物时一起应付。你在游戏聊天框里叫它就行，不用切出游戏。
 
@@ -31,7 +31,7 @@
 
 准备 Minecraft Java 版、一个本地或私人服务器，以及 [Node.js 22 或更新版本](https://nodejs.org/)。机器人是额外的一名玩家，需要能连接到你的服务器；默认连接本机 `127.0.0.1:25565`。单人存档也可以先“对局域网开放”，然后把游戏显示的端口填进配置。
 
-下载源码后，在项目文件夹打开终端，安装依赖：
+从[最新发布页](https://github.com/colornia/opensquad/releases/latest)下载源码 ZIP 并解压。在项目文件夹打开终端，安装依赖：
 
 ```sh
 npm ci

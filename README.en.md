@@ -2,7 +2,7 @@
 
 A teammate for your Minecraft world.
 
-[简体中文](README.md) · [Setup and development](docs/development.en.md)
+[简体中文](README.md) · [Download](https://github.com/colornia/opensquad/releases/latest) · [Setup and development](docs/development.en.md)
 
 OpenSquad joins your private Minecraft Java server as another player. Ask it to follow you, gather nearby materials, share inventory items, or guard against nearby hostile mobs through in-game text chat. Basic commands and saved preferences work without an LLM API key. An optional model provider adds free-form conversation.
 
