@@ -32,7 +32,7 @@ async function main() {
   const watchdog = setTimeout(() => {
     console.error("Smoke timed out");
     process.exit(1);
-  }, 25000);
+  }, 45000);
   try {
     await server.waitForReady(10000);
     adapter = new MinecraftAdapter({
@@ -128,6 +128,25 @@ async function main() {
       "collected dirt into inventory",
     );
     await command("give me dirt 1", "Dropped 1 dirt");
+    await server.setBlock(
+      server.overworld,
+      adapter.bot.entity.position.floored().offset(2, 0, 0),
+      server.registry.blocksByName.oak_log.minStateId,
+    );
+    await new Promise((r) => setTimeout(r, 300));
+    const dug = once(adapter.bot, "diggingCompleted", {
+      signal: AbortSignal.timeout(7000),
+    });
+    alex.chat("!bot collect oak_log 16");
+    await dug;
+    await command("stop", "Stopped.");
+    assert.equal(
+      adapter.bot.pathfinder.isMining(),
+      false,
+      "mining stopped before acknowledgement",
+    );
+    await command("follow me", "Following Alex.");
+    await command("stop", "Stopped.");
     assert.deepEqual(
       new MemoryStore(join(dir, "memory.json")).get("Alex").preferences,
       ["likes mining"],

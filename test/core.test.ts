@@ -153,6 +153,10 @@ test("Chinese instructions route to the same skills", () => {
     chineseReply("Couldn't finish: I have no dirt."),
     /我背包里还没有 dirt/,
   );
+  assert.match(
+    chineseReply("Couldn't finish: No path to the goal!"),
+    /换个开阔的位置/,
+  );
 });
 test("forget removes only the current player and survives restart", () => {
   const dir = mkdtempSync(join(tmpdir(), "opensquad-"));

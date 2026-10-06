@@ -3,9 +3,13 @@ import type { Skills } from "../skills";
 import type { Brain } from "../brain";
 import { MemoryStore } from "../memory/store";
 import { isChinese, chineseReply } from "./language";
+import { interruptible } from "./cancellation";
 export class Controller {
   private active?: AbortController;
   private running = false;
+  private stopping?: Promise<void>;
+  private completed?: Promise<void>;
+  private stopRequests = 0;
   constructor(
     private skills: Skills,
     private brain: Brain,
@@ -13,25 +17,52 @@ export class Controller {
     private say: (text: string) => void,
     private timeout = 45000,
   ) {}
+  private stopSkills(): Promise<void> {
+    if (this.stopping) return this.stopping;
+    const stopping = Promise.resolve().then(() => this.skills.stop());
+    this.stopping = stopping;
+    const clear = () => {
+      if (this.stopping === stopping) this.stopping = undefined;
+    };
+    void stopping.then(clear, clear);
+    return stopping;
+  }
+  private async waitForStop() {
+    await this.stopping?.catch(() => {});
+  }
   async handle(player: string, text: string) {
     const intent = route(text);
     const zh = isChinese(text);
     const say = (message: string) =>
       this.say(zh ? chineseReply(message) : message);
     if (intent.kind === "stop") {
+      this.stopRequests++;
       this.active?.abort();
-      await this.skills.stop();
-      say("Stopped.");
+      try {
+        await this.stopSkills();
+        await this.completed;
+        say("Stopped.");
+      } catch {
+        say("Couldn't stop cleanly. Wait for the current action or reconnect.");
+      } finally {
+        this.stopRequests--;
+      }
       return;
     }
-    if (this.running) {
+    if (this.running || this.stopping || this.stopRequests) {
       say("I am busy. Say stop before another command.");
       return;
     }
     this.running = true;
+    let complete!: () => void;
+    this.completed = new Promise<void>((resolve) => {
+      complete = resolve;
+    });
     const abort = new AbortController();
     this.active = abort;
     let timer: NodeJS.Timeout | undefined;
+    let work: Promise<string> | undefined;
+    let timedOut = false;
     try {
       if (intent.kind === "help") {
         say(
@@ -75,20 +106,25 @@ export class Controller {
         return;
       }
       if (intent.kind === "chat") {
-        const reply = await this.brain.reply(
-          { player, text: intent.text, memory: this.memory.get(player) },
+        const replyWork = interruptible(
+          this.brain.reply(
+            { player, text: intent.text, memory: this.memory.get(player) },
+            abort.signal,
+          ),
           abort.signal,
         );
+        const reply = await replyWork;
         abort.signal.throwIfAborted();
         this.say(reply);
         return;
       }
-      await this.skills.stop();
+      await this.stopSkills();
       abort.signal.throwIfAborted();
       const deadline = new Promise<never>((_, reject) => {
         timer = setTimeout(() => {
+          timedOut = true;
           abort.abort();
-          void this.skills.stop().catch(() => {});
+          void this.stopSkills().catch(() => {});
           reject(new Error("Action timed out; stopped."));
         }, this.timeout);
       });
@@ -114,20 +150,30 @@ export class Controller {
         }
         throw new Error("Unsupported action");
       };
-      const result = await Promise.race([action(), deadline]);
+      work = action();
+      const result = await Promise.race([work, deadline]);
       abort.signal.throwIfAborted();
       this.memory.event(player, result);
       say(result);
     } catch (error) {
       say(
-        abort.signal.aborted
-          ? "Action stopped or timed out."
-          : `Couldn't finish: ${error instanceof Error ? error.message : "unknown error"}`,
+        timedOut
+          ? "The action timed out. Finishing cleanup before another task."
+          : abort.signal.aborted
+            ? "Action stopped or timed out."
+            : `Couldn't finish: ${error instanceof Error ? error.message : "unknown error"}`,
       );
+      if (work && !abort.signal.aborted)
+        await this.stopSkills().catch(() => {});
     } finally {
       if (timer) clearTimeout(timer);
+      // A raced timeout must not release the adapter while the old skill's finally block is still running.
+      if (work) await work.catch(() => {});
+      await this.waitForStop();
+      this.completed = undefined;
       if (this.active === abort) this.active = undefined;
       this.running = false;
+      complete();
     }
   }
 }

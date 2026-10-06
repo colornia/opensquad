@@ -87,6 +87,10 @@ export class MinecraftAdapter implements Skills {
   async come(name: string) {
     const p = this.player(name).position;
     await this.bot.pathfinder.goto(new goals.GoalNear(p.x, p.y, p.z, 2));
+    if (this.bot.entity.position.distanceTo(p) > 3)
+      throw new Error(
+        "I couldn't reach that spot. Try moving to an open area.",
+      );
     return `I'm here, ${name}.`;
   }
   async collect(item: string, count: number, signal: AbortSignal) {

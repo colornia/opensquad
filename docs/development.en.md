@@ -1,6 +1,10 @@
 # OpenSquad v0.1
 
+The local network smoke includes stopping collection after a block is dug and accepting a new follow command afterward. Conversation cancellation is tested with a deliberately delayed provider: the next game command can run before that provider returns, and its late reply is discarded.
+
 [中文首页](../README.md) · [English overview](../README.en.md)
+
+The controller retains its action lock after a timeout until the underlying skill settles. Stop requests share a single cleanup operation and wait for any finite action to unwind before confirming completion. A third-party skill that never settles can therefore keep the bot busy; reconnect rather than starting overlapping actions. Late canceled results are neither announced nor persisted.
 
 `npm run setup` creates a `.env` interactively with Chinese prompts; `--defaults` creates a localhost config non-interactively. Both preserve existing files. `npm run doctor` validates configuration and probes the TCP port without logging in or displaying API keys. It cannot establish Minecraft version/authentication compatibility.
 
