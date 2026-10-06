@@ -60,6 +60,8 @@ Combat is deliberately basic: a fixed hostile allowlist, bounded range, pursuit,
 
 ## Architecture and LLM configuration
 
+`src/brain/basic-chat.ts` provides fixed Chinese/English fallback patterns for greetings, capabilities, preferences, shared-event recall and activity suggestions. It reads the supplied memory without writing it and never starts skills. It is not a language model or an open-ended dialogue system; unsupported phrasing gets a capability hint.
+
 `src/minecraft/companion.ts` maintains follow/protection/attack targets. It retains a dynamic pathfinding goal while the same entity is selected, pauses when the player is not visible, and follows the replacement entity when that player returns. Protection returns to following after a hostile disappears. This does not provide teleportation, cross-dimension travel, or guaranteed pathfinding success.
 
 Status and inventory queries bypass the action lock, do not call the brain, and do not create memory events. Status describes the current request or selected ongoing mode rather than confirming position or continuous movement. The optional `Skills.inventory()` getter returns aggregated `{ name, count }` entries; adapters without it report that inventory queries are unavailable. Collection with zero new items fails without creating a successful event.

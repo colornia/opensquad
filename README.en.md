@@ -26,6 +26,8 @@ Use `!bot status` to check the current task or selected mode, and `!bot inventor
 
 ## Data and contributions
 
+Basic chat also answers `what can you do`, `what should we do today`, `what do I like`, and `what did we do last time`. Suggestions use saved preferences without starting actions. It is a small set of fixed conversation patterns; an external model adds open-ended conversation.
+
 Preferences and successful action events live in `data/memory.json`, which is excluded from Git. Ordinary chat is not saved. With an external model enabled, addressed free-form chat, player name, and saved memory are sent to the configured provider. Local deletion does not remove copies held by that provider. Do not include credentials or private server details in issue reports.
 
 OpenSquad uses Mineflayer and is licensed under MIT. See the [development guide](docs/development.en.md) for provider integration and tests. Report reproducible problems through [Issues](https://github.com/colornia/opensquad/issues).

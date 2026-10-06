@@ -332,6 +332,11 @@ async function main() {
     );
     await command("停下", "好，停下了。");
     await command("记住 我喜欢探索矿洞", "记住了");
+    await command("今天做什么", "还没有开始执行");
+    assert.ok(
+      seen.at(-1)?.includes("探索矿洞"),
+      "basic chat uses the saved preference",
+    );
     await command("回忆", "我喜欢探索矿洞");
     await command("忘记我", "已经删除你的本地偏好和合作记录。");
     assert.deepEqual(new MemoryStore(join(dir, "memory.json")).get("Alex"), {
