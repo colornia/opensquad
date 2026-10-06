@@ -86,6 +86,8 @@ Configuration is in `.env.example` with defaults in `src/config.ts`. Numeric set
 
 ## Verification
 
+Privacy checks inspect working files and index blobs; `--history` includes file blobs reachable from local Git refs. Null-delimited path lists support Chinese filenames, and unique objects are read in bounded batches with [Git's `cat-file --batch` format](https://git-scm.com/docs/git-cat-file#_batch_output). Payloads are sliced by byte length before UTF-8 decoding. Findings report location and category without credential values; recognized credentials in filenames are redacted. Fixture repositories test staged/working divergence, deleted historical content, Unicode paths and renamed example keys. The checker does not fetch remote refs or inspect ignored runtime files and submodule contents. An unreadable scan exits with failure rather than silently skipping an object.
+
 The local network smoke includes stopping collection after a block is dug and accepting a new follow command afterward. Conversation cancellation is tested with a deliberately delayed provider: the next game command can run before that provider returns, and its late reply is discarded.
 
 The combat portion uses stationary protocol-server mobs and temporarily disables the teammate client's movement physics to isolate attack delivery and target selection. Health changes use the server's normal damage handler. The fixture explicitly synchronizes the chat player's teleport position; movement physics is restored for collection and handoff. These checks do not establish pursuit or survival performance against autonomous mobs.
