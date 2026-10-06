@@ -1,7 +1,7 @@
 import { route, type Intent } from "./router";
 import type { Skills } from "../skills";
 import type { Brain } from "../brain";
-import { MemoryStore } from "../memory/store";
+import { MemoryStore, MemoryWriteError } from "../memory/store";
 import { isChinese, chineseReply, chineseItemName } from "./language";
 import { interruptible } from "./cancellation";
 export class Controller {
@@ -240,9 +240,26 @@ export class Controller {
         intent.kind === "attack"
       )
         this.mode = { kind: intent.kind, player };
-      this.memory.event(player, result);
       say(result);
+      try {
+        this.memory.event(player, result);
+      } catch (error) {
+        if (!(error instanceof MemoryWriteError)) throw error;
+        this.say(
+          zh
+            ? "动作已完成，但这次合作记录没能保存。请检查本地存储权限和空间。"
+            : "The action finished, but its event could not be saved. Check local storage permissions and space.",
+        );
+      }
     } catch (error) {
+      if (error instanceof MemoryWriteError) {
+        this.say(
+          zh
+            ? "记忆文件没能更新，保存或删除尚未完成。请检查本地存储权限和空间后重试。"
+            : "Memory update failed; saving or deletion has not completed. Check local storage permissions and space, then retry.",
+        );
+        return;
+      }
       say(
         timedOut
           ? "The action timed out. Finishing cleanup before another task."

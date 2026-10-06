@@ -4,11 +4,21 @@ import {
   writeFileSync,
   renameSync,
   existsSync,
+  rmSync,
 } from "node:fs";
 import { dirname } from "node:path";
 export interface PlayerMemory {
   preferences: string[];
   events: { at: string; text: string }[];
+}
+export class MemoryWriteError extends Error {
+  constructor(cause: unknown) {
+    super(
+      "Memory could not be saved. Check storage permissions and available space.",
+      { cause },
+    );
+    this.name = "MemoryWriteError";
+  }
 }
 export class MemoryStore {
   private data: Record<string, PlayerMemory> = Object.create(null);
@@ -20,6 +30,8 @@ export class MemoryStore {
       for (const [name, value] of Object.entries(parsed)) {
         const p = value as PlayerMemory;
         if (
+          !p ||
+          typeof p !== "object" ||
           !Array.isArray(p.preferences) ||
           !p.preferences.every((x) => typeof x === "string") ||
           !Array.isArray(p.events) ||
@@ -28,7 +40,10 @@ export class MemoryStore {
           )
         )
           throw new Error("Invalid memory record");
-        this.data[name] = p;
+        this.data[name] = {
+          preferences: p.preferences.slice(-20),
+          events: p.events.slice(-50),
+        };
       }
     }
   }
@@ -49,18 +64,31 @@ export class MemoryStore {
     this.save(player, p);
   }
   forget(player: string) {
-    delete this.data[player];
-    this.persist();
+    const next = this.snapshot();
+    delete next[player];
+    this.persist(next);
   }
   private save(player: string, p: PlayerMemory) {
-    this.data[player] = p;
-    this.persist();
+    const next = this.snapshot();
+    next[player] = p;
+    this.persist(next);
   }
-  private persist() {
-    mkdirSync(dirname(this.path), { recursive: true });
-    writeFileSync(`${this.path}.tmp`, JSON.stringify(this.data, null, 2), {
-      mode: 0o600,
-    });
-    renameSync(`${this.path}.tmp`, this.path);
+  private snapshot(): Record<string, PlayerMemory> {
+    return Object.assign(Object.create(null), this.data);
+  }
+  private persist(next: Record<string, PlayerMemory>) {
+    try {
+      mkdirSync(dirname(this.path), { recursive: true });
+      writeFileSync(`${this.path}.tmp`, JSON.stringify(next, null, 2), {
+        mode: 0o600,
+      });
+      renameSync(`${this.path}.tmp`, this.path);
+      this.data = next;
+    } catch (error) {
+      try {
+        rmSync(`${this.path}.tmp`, { force: true });
+      } catch {}
+      throw new MemoryWriteError(error);
+    }
   }
 }

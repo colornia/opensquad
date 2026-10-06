@@ -60,6 +60,8 @@ Combat is deliberately basic: a fixed hostile allowlist, bounded range, pursuit,
 
 ## Architecture and LLM configuration
 
+Memory mutations are committed to the in-memory snapshot only after atomic file replacement succeeds. Storage failures raise `MemoryWriteError` with a generic public message and retain the previous snapshot; game chat never formats its underlying filesystem cause. Failed event persistence reports a separate warning after the completed skill result, rather than canceling the action or active mode. Loaded valid files also retain only the latest 20 preferences and 50 events per player.
+
 Chinese aliases also accept compact resource commands (`收集橡木3个`, `给我3个泥土`) and a leading `帮我` for collection. Counts can precede or follow the resource but cannot appear twice. Zero and negative counts return a deterministic invalid-input message before the action lock, without stopping skills, writing events or calling the brain. Other registry item names retain the spaced syntax.
 
 `src/brain/basic-chat.ts` provides fixed Chinese/English fallback patterns for greetings, capabilities, preferences, shared-event recall and activity suggestions. It reads the supplied memory without writing it and never starts skills. It is not a language model or an open-ended dialogue system; unsupported phrasing gets a capability hint.
