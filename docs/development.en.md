@@ -60,6 +60,8 @@ Combat is deliberately basic: a fixed hostile allowlist, bounded range, pursuit,
 
 ## Architecture and LLM configuration
 
+`src/minecraft/visibility.ts` checks loaded cells along the line from the bot's head to the target's torso and raycasts against block collision shapes before attacking. Blocked attempts do not consume cooldown. This is a conservative hit check, not a planner for navigating around obstacles or finding exposed body parts. The protocol smoke builds a solid wall, verifies no attacks, then removes it and checks damage.
+
 Memory mutations are committed to the in-memory snapshot only after atomic file replacement succeeds. Storage failures raise `MemoryWriteError` with a generic public message and retain the previous snapshot; game chat never formats its underlying filesystem cause. Failed event persistence reports a separate warning after the completed skill result, rather than canceling the action or active mode. Loaded valid files also retain only the latest 20 preferences and 50 events per player.
 
 Chinese aliases also accept compact resource commands (`收集橡木3个`, `给我3个泥土`) and a leading `帮我` for collection. Counts can precede or follow the resource but cannot appear twice. Zero and negative counts return a deterministic invalid-input message before the action lock, without stopping skills, writing events or calling the brain. Other registry item names retain the spaced syntax.

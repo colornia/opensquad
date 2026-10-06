@@ -2,18 +2,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { Bot } from "mineflayer";
 import { CompanionNavigation } from "../src/minecraft/companion";
+import { Vec3 } from "vec3";
 
 function fixture() {
   const entity = (name: string, x: number) => ({
     name,
-    position: {
-      x,
-      y: 0,
-      z: 0,
-      distanceTo(p: { x: number }) {
-        return Math.abs(x - p.x);
-      },
-    },
+    height: 1.8,
+    position: new Vec3(x, 0, 0),
   });
   const player = entity("player", 1);
   const zombie = entity("zombie", 2);
@@ -21,6 +16,8 @@ function fixture() {
   const goals: unknown[] = [],
     hits: unknown[] = [];
   const bot = {
+    blockAt: (_position: Vec3) => ({ shapes: [] }) as object | null,
+    world: { raycast: () => null as unknown },
     entity: entity("player", 0),
     players: { Alex: { entity: player as typeof player | undefined } },
     entities: { 1: zombie, 2: cow } as Record<number, typeof zombie>,
@@ -49,6 +46,44 @@ function fixture() {
   };
 }
 const hostile = new Set(["zombie"]);
+
+test("missing chunk data cannot establish a clear attack line", () => {
+  const f = fixture();
+  f.bot.blockAt = () => null;
+  f.navigation.update("attack", hostile);
+  assert.equal(f.hits.length, 0);
+  f.bot.blockAt = () => ({ shapes: [] });
+  f.navigation.update("attack", hostile);
+  assert.equal(f.hits.length, 1);
+});
+
+test("a short diagonal crossing into an unloaded chunk blocks an attack", () => {
+  const f = fixture();
+  f.bot.entity.position = new Vec3(15.9, 0, 15.9);
+  f.zombie.position = new Vec3(16.1, 0, 16.2);
+  f.bot.blockAt = (position) =>
+    Math.floor(position.x / 16) === 0 && Math.floor(position.z / 16) === 1
+      ? null
+      : {};
+  f.navigation.update("attack", hostile);
+  assert.equal(f.hits.length, 0);
+});
+
+test("blocked attacks wait for visibility without consuming the attack cooldown", () => {
+  const f = fixture();
+  f.bot.world.raycast = () => ({ shapes: [[0, 0, 0, 1, 1, 1]] });
+  f.navigation.update("attack", hostile);
+  assert.equal(f.hits.length, 0);
+  f.bot.world.raycast = () => null;
+  f.navigation.update("attack", hostile);
+  assert.equal(
+    f.hits.length,
+    1,
+    "the first clear attack can happen immediately",
+  );
+  f.navigation.update("attack", hostile);
+  assert.equal(f.hits.length, 1, "visible attacks still honor cooldown");
+});
 
 test("protection retains its dynamic goal, attacks at cooldown and returns to the player", () => {
   const f = fixture();

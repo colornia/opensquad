@@ -1,6 +1,6 @@
 {
   "name": "opensquad",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "private": true,
   "description": "An open-source Minecraft teammate",
   "license": "MIT",
@@ -31,6 +31,7 @@
     "flying-squid": "^1.12.0",
     "prettier": "3.9.9",
     "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vec3": "0.1.10"
   }
 }

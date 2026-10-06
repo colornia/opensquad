@@ -161,15 +161,14 @@ async function main() {
         if (packet.mouse === 1) attacks.push(packet.target);
       },
     );
-    const spawnMob = (name: string) => {
+    const spawnMob = (
+      name: string,
+      position = adapter!.bot.entity.position.offset(1, 0, 1),
+    ) => {
       const type = server.registry.entitiesByName[name];
       // Flying Squid's helper uses a legacy mob table; supply the current protocol entry.
       server.registry.mobs[type.id] ??= type;
-      const mob = server.spawnMob(
-        type.id,
-        server.overworld,
-        adapter!.bot.entity.position.offset(1, 0, 1),
-      );
+      const mob = server.spawnMob(type.id, server.overworld, position);
       // This fixture checks protocol hits, not mob locomotion. Keep the initial target in reach.
       mob.calculatePhysics = async () => ({
         position: mob.position,
@@ -222,16 +221,55 @@ async function main() {
     );
     await command("stop", "Stopped.");
     const afterStop = attacks.length;
-    const waitingZombie = spawnMob("zombie");
+    const waitingZombie = spawnMob(
+      "zombie",
+      adapter.bot.entity.position.offset(2.5, 0, 0),
+    );
     await waitFor(
       () => !!adapter!.bot.entities[waitingZombie.id],
       "second hostile visible",
     );
     await new Promise((r) => setTimeout(r, 800));
     assert.equal(attacks.length, afterStop, "stop prevents further combat");
+    const wall = Array.from({ length: 3 }, (_, y) =>
+      adapter!.bot.entity.position.floored().offset(1, y, 0),
+    );
+    const wallStates = wall.map(
+      (position) => adapter!.bot.blockAt(position)!.stateId,
+    );
+    for (const position of wall)
+      await server.setBlock(
+        server.overworld,
+        position,
+        server.registry.blocksByName.stone.minStateId,
+      );
+    await waitFor(
+      () =>
+        wall.every(
+          (position) => adapter!.bot.blockAt(position)?.name === "stone",
+        ),
+      "wall visible in bot world data",
+    );
     await command(
       "attack nearby hostile mobs",
       "Attacking nearby hostile mobs.",
+    );
+    await new Promise((r) => setTimeout(r, 800));
+    assert.equal(
+      attacks.length,
+      afterStop,
+      "no attacks through the solid wall",
+    );
+    assert.equal(waitingZombie.health, 20);
+    for (const [i, position] of wall.entries())
+      await server.setBlock(server.overworld, position, wallStates[i]);
+    await waitFor(
+      () =>
+        wall.every(
+          (position, i) =>
+            adapter!.bot.blockAt(position)?.stateId === wallStates[i],
+        ),
+      "wall removed from bot world data",
     );
     await waitFor(
       () => attacks.includes(waitingZombie.id) && waitingZombie.health < 20,

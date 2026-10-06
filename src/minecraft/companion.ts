@@ -1,5 +1,6 @@
 import type { Bot } from "mineflayer";
 import { goals } from "mineflayer-pathfinder";
+import { hasClearAttackLine } from "./visibility";
 
 export type CompanionMode = "follow" | "protect" | "attack";
 
@@ -51,7 +52,8 @@ export class CompanionNavigation {
       mode !== "follow" &&
       hostiles.has(target.name ?? "") &&
       target.position.distanceTo(self.position) < 3 &&
-      this.now() - this.lastAttack >= 650
+      this.now() - this.lastAttack >= 650 &&
+      hasClearAttackLine(this.bot, target)
     ) {
       this.lastAttack = this.now();
       this.bot.attack(target);
