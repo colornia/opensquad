@@ -60,6 +60,8 @@ Combat is deliberately basic: a fixed hostile allowlist, bounded range, pursuit,
 
 ## Architecture and LLM configuration
 
+Chinese aliases also accept compact resource commands (`收集橡木3个`, `给我3个泥土`) and a leading `帮我` for collection. Counts can precede or follow the resource but cannot appear twice. Zero and negative counts return a deterministic invalid-input message before the action lock, without stopping skills, writing events or calling the brain. Other registry item names retain the spaced syntax.
+
 `src/brain/basic-chat.ts` provides fixed Chinese/English fallback patterns for greetings, capabilities, preferences, shared-event recall and activity suggestions. It reads the supplied memory without writing it and never starts skills. It is not a language model or an open-ended dialogue system; unsupported phrasing gets a capability hint.
 
 `src/minecraft/companion.ts` maintains follow/protection/attack targets. It retains a dynamic pathfinding goal while the same entity is selected, pauses when the player is not visible, and follows the replacement entity when that player returns. Protection returns to following after a hostile disappears. This does not provide teleportation, cross-dimension travel, or guaranteed pathfinding success.

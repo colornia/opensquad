@@ -261,13 +261,14 @@ async function main() {
       server.registry.blocksByName.dirt.minStateId,
     );
     await new Promise((r) => setTimeout(r, 300));
-    await command("collect dirt 1", "Collected");
+    await command("收集泥土1个", "收集到了 1 个 泥土");
     assert.ok(
       adapter.bot.inventory.items().some((i) => i.name === "dirt"),
       "collected dirt into inventory",
     );
     await command("背包", "泥土 ×1");
-    await command("give me dirt 1", "Dropped 1 dirt");
+    await command("给我1个泥土", "把 1 个 泥土 放在 Alex 身边了");
+    await command("收集3个橡木2个", "数量只写一次");
     await server.setBlock(
       server.overworld,
       adapter.bot.entity.position.floored().offset(2, 0, 0),

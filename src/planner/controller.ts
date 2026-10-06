@@ -76,6 +76,10 @@ export class Controller {
     const zh = isChinese(text);
     const say = (message: string) =>
       this.say(zh ? chineseReply(message) : message);
+    if (intent.kind === "invalid") {
+      this.say(intent.message);
+      return;
+    }
     if (intent.kind === "status") {
       this.say(this.status(zh));
       return;

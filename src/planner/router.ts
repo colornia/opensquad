@@ -11,9 +11,47 @@ export type Intent =
         | "forget";
     }
   | { kind: "status" | "inventory" }
+  | { kind: "invalid"; message: string }
   | { kind: "collect" | "give"; item: string; count: number }
   | { kind: "remember"; preference: string }
   | { kind: "chat"; text: string };
+const resourceAliases: Record<string, string> = {
+  橡木: "oak_log",
+  橡木原木: "oak_log",
+  白桦木: "birch_log",
+  白桦木原木: "birch_log",
+  云杉木: "spruce_log",
+  云杉木原木: "spruce_log",
+  泥土: "dirt",
+  沙子: "sand",
+  圆石: "cobblestone",
+  煤炭: "coal",
+  粗铁: "raw_iron",
+  钻石: "diamond",
+};
+const compactResource = new RegExp(
+  `^(?:帮我)?(收集|采集|给我)\\s*(?:(-?\\d+)\\s*个?\\s*)?(${Object.keys(
+    resourceAliases,
+  )
+    .sort((a, b) => b.length - a.length)
+    .join("|")})\\s*(?:(-?\\d+)\\s*个?)?$`,
+);
+function resourceIntent(
+  kind: "collect" | "give",
+  item: string,
+  quantity?: string,
+  chinese = false,
+): Intent {
+  const count = Number(quantity ?? 1);
+  if (count <= 0)
+    return {
+      kind: "invalid",
+      message: chinese
+        ? "数量要是正整数，例如‘收集橡木3个’。"
+        : "Use a positive whole number, for example collect oak_log 3.",
+    };
+  return { kind, item, count: Math.min(64, count) };
+}
 export function route(text: string): Intent {
   const s = text.trim().replace(/[.!?。！？]+$/, "");
   if (/^(follow( me)?|跟着我|跟随我)$/i.test(s)) return { kind: "follow" };
@@ -30,39 +68,42 @@ export function route(text: string): Intent {
   const remember = s.match(/^(?:remember|记住)\s+(.+)$/i);
   if (remember)
     return { kind: "remember", preference: remember[1].slice(0, 200) };
-  const chinese = s.match(/^(收集|采集|给我)\s+([^\s]+)(?:\s+(\d+)(?:个)?)?$/);
+  const compact = s.match(compactResource);
+  if (compact) {
+    if (compact[2] && compact[4])
+      return {
+        kind: "invalid",
+        message: "数量只写一次，例如‘给我3个泥土’或‘给我泥土3个’。",
+      };
+    return resourceIntent(
+      compact[1] === "给我" ? "give" : "collect",
+      resourceAliases[compact[3]],
+      compact[2] ?? compact[4],
+      true,
+    );
+  }
+  const chinese = s.match(
+    /^(收集|采集|给我)\s+([^\s]+)(?:\s+(-?\d+)(?:个)?)?$/,
+  );
   if (chinese) {
-    const aliases: Record<string, string> = {
-      橡木: "oak_log",
-      橡木原木: "oak_log",
-      白桦木: "birch_log",
-      白桦木原木: "birch_log",
-      云杉木: "spruce_log",
-      云杉木原木: "spruce_log",
-      泥土: "dirt",
-      沙子: "sand",
-      圆石: "cobblestone",
-      煤炭: "coal",
-      粗铁: "raw_iron",
-      钻石: "diamond",
-    };
-    return {
-      kind: chinese[1] === "给我" ? "give" : "collect",
-      item: Object.hasOwn(aliases, chinese[2])
-        ? aliases[chinese[2]]
+    return resourceIntent(
+      chinese[1] === "给我" ? "give" : "collect",
+      Object.hasOwn(resourceAliases, chinese[2])
+        ? resourceAliases[chinese[2]]
         : chinese[2].toLowerCase(),
-      count: Math.max(1, Math.min(64, Number(chinese[3] ?? 1))),
-    };
+      chinese[3],
+      true,
+    );
   }
   const m = s.match(
-    /^(collect|give(?: me)?)\s+([a-z][a-z0-9_ ]*?)(?:\s+(\d+))?$/i,
+    /^(collect|give(?: me)?)\s+([a-z][a-z0-9_ ]*?)(?:\s+(-?\d+))?$/i,
   );
   if (m)
-    return {
-      kind: m[1].toLowerCase() === "collect" ? "collect" : "give",
-      item: m[2].trim().toLowerCase().replace(/\s+/g, "_"),
-      count: Math.max(1, Math.min(64, Number(m[3] ?? 1))),
-    };
+    return resourceIntent(
+      m[1].toLowerCase() === "collect" ? "collect" : "give",
+      m[2].trim().toLowerCase().replace(/\s+/g, "_"),
+      m[3],
+    );
   return { kind: "chat", text: text.slice(0, 500) };
 }
 export function addressed(

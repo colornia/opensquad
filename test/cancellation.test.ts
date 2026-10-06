@@ -73,6 +73,10 @@ test("timeout keeps the adapter reserved until a late action finishes cleanup", 
     const job = f.controller.handle("Alex", "collect dirt");
     await started.promise;
     const stopCount = f.calls.filter((x) => x === "stop").length;
+    await f.controller.handle("Alex", "给我3个泥土2个");
+    assert.match(f.messages.at(-1)!, /数量只写一次/);
+    assert.equal(f.calls.filter((x) => x === "stop").length, stopCount);
+    assert.equal(f.memory.get("Alex").events.length, 0);
     await f.controller.handle("Alex", "状态");
     assert.ok(f.messages.some((x) => x.includes("收集资源")));
     assert.equal(
