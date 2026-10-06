@@ -1,5 +1,7 @@
 # OpenSquad
 
+![OpenSquad 项目插画：两个方块伙伴站在同一片草地上](docs/assets/opensquad-banner.svg)
+
 在 Minecraft 里，叫上一个 AI 队友。
 
 [![CI](https://github.com/colornia/opensquad/actions/workflows/ci.yml/badge.svg)](https://github.com/colornia/opensquad/actions/workflows/ci.yml)

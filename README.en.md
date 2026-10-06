@@ -1,5 +1,7 @@
 # OpenSquad
 
+![OpenSquad project illustration: two block-shaped companions standing together](docs/assets/opensquad-banner.svg)
+
 A teammate for your Minecraft world.
 
 [简体中文](README.md) · [Download](https://github.com/colornia/opensquad/releases/latest) · [Setup and development](docs/development.en.md)

@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-labelledby="title description">
+  <title id="title">OpenSquad — a teammate for your Minecraft world</title>
+  <desc id="description">Original project illustration of two block-shaped companions standing together on a small grassy island. This is an illustration, not a gameplay screenshot.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#102a2b"/>
+      <stop offset="1" stop-color="#253e35"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop stop-color="#9cd4a4" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#9cd4a4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="400" rx="20" fill="url(#sky)"/>
+  <ellipse cx="985" cy="192" rx="290" ry="190" fill="url(#glow)"/>
+  <g fill="#426357" opacity=".5" shape-rendering="crispEdges">
+    <rect x="686" y="64" width="5" height="5"/><rect x="805" y="92" width="4" height="4"/>
+    <rect x="1106" y="70" width="5" height="5"/><rect x="1190" y="122" width="4" height="4"/>
+    <path d="M675 300h60v-45h50v30h65v-80h60v60h40v-30h80v50h55v-75h65v50h50v-55h60v115H675z"/>
+  </g>
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <text x="76" y="151" fill="#f0f7ed" font-size="68" font-weight="700" letter-spacing="-2">OpenSquad</text>
+    <text x="80" y="203" fill="#bed5c6" font-size="23">A teammate for your Minecraft world.</text>
+    <rect x="80" y="242" width="34" height="4" rx="2" fill="#a4dca8"/>
+    <text x="80" y="285" fill="#8aab99" font-size="18">Follow. Gather. Share. Stay together.</text>
+  </g>
+  <g shape-rendering="crispEdges">
+    <path d="M714 310 957 252 1186 313 946 375z" fill="#4f7651"/>
+    <path d="M714 310 946 375v24L714 337z" fill="#304638"/>
+    <path d="M946 375 1186 313v25l-240 61z" fill="#253b30"/>
+    <path d="m807 320 146-34 143 37-145 37z" fill="#9c946a"/>
+    <path d="m835 327 30-7 28 7-30 7zm69-16 30-7 28 7-30 7zm30 34 30-7 28 7-30 7zm73-17 30-7 28 7-30 7z" fill="#b5aa7e"/>
+    <ellipse cx="849" cy="315" rx="43" ry="10" fill="#1b3429" opacity=".5"/>
+    <ellipse cx="1040" cy="315" rx="43" ry="10" fill="#1b3429" opacity=".5"/>
+    <!-- Player: warm jacket, square face and a small pack. -->
+    <rect x="812" y="242" width="17" height="51" fill="#c27744"/>
+    <path d="m877 233 12 7v47l-12-7z" fill="#8c593a"/>
+    <rect x="827" y="233" width="50" height="49" fill="#e7a05a"/>
+    <rect x="827" y="278" width="50" height="9" fill="#835945"/>
+    <rect x="831" y="287" width="19" height="29" fill="#3e5860"/>
+    <rect x="857" y="287" width="19" height="29" fill="#3e5860"/>
+    <rect x="829" y="312" width="21" height="7" fill="#243a3f"/>
+    <rect x="857" y="312" width="21" height="7" fill="#243a3f"/>
+    <rect x="826" y="182" width="51" height="51" fill="#e4bd8d"/>
+    <path d="m877 182 13 9v49l-13-7z" fill="#b99067"/>
+    <rect x="826" y="178" width="51" height="16" fill="#243d3f"/>
+    <rect x="826" y="193" width="8" height="12" fill="#243d3f"/>
+    <rect x="837" y="207" width="6" height="6" fill="#243d3f"/>
+    <rect x="860" y="207" width="6" height="6" fill="#243d3f"/>
+    <rect x="847" y="221" width="12" height="3" fill="#a96e56"/>
+    <rect x="812" y="286" width="17" height="9" fill="#e4bd8d"/>
+    <!-- Companion: mint face, simple visor and a matching satchel. -->
+    <rect x="1003" y="241" width="17" height="48" fill="#5eaa8e"/>
+    <rect x="1070" y="241" width="17" height="48" fill="#5eaa8e"/>
+    <rect x="1020" y="233" width="50" height="53" fill="#7fc4a3"/>
+    <path d="m1070 233 12 7v47l-12-1z" fill="#428267"/>
+    <rect x="1020" y="248" width="50" height="7" fill="#346b58"/>
+    <rect x="1037" y="256" width="16" height="13" fill="#f3d68b"/>
+    <rect x="1024" y="286" width="19" height="30" fill="#365d50"/>
+    <rect x="1050" y="286" width="19" height="30" fill="#365d50"/>
+    <rect x="1022" y="312" width="21" height="7" fill="#244439"/>
+    <rect x="1050" y="312" width="21" height="7" fill="#244439"/>
+    <rect x="1019" y="182" width="51" height="51" fill="#bde5ca"/>
+    <path d="m1070 182 12 9v49l-12-7z" fill="#80b99e"/>
+    <rect x="1026" y="198" width="37" height="16" fill="#234e43"/>
+    <rect x="1032" y="203" width="7" height="6" fill="#d0f7bc"/>
+    <rect x="1051" y="203" width="7" height="6" fill="#d0f7bc"/>
+    <rect x="1039" y="221" width="12" height="3" fill="#4b8b70"/>
+    <rect x="1041" y="171" width="6" height="11" fill="#7fc4a3"/>
+    <rect x="1039" y="166" width="10" height="7" fill="#e9d489"/>
+    <rect x="1003" y="285" width="17" height="9" fill="#bde5ca"/>
+    <rect x="1070" y="285" width="17" height="9" fill="#bde5ca"/>
+    <rect x="756" y="297" width="5" height="14" fill="#769c61"/>
+    <rect x="747" y="301" width="9" height="5" fill="#769c61"/>
+    <rect x="1139" y="299" width="5" height="12" fill="#769c61"/>
+  </g>
+</svg>
